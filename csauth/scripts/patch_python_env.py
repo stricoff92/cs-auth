@@ -1,4 +1,17 @@
 
+'''
+    Python ldap client is not 100% compatable with python3.10.
+    This script edits the library code such that it is compatable
+    with python3.10.
+
+    packagedir environment variable must be set before running this script,
+    for example:
+
+    packagedir=lib/python3.10/site-packages/ldap3 ./main patch_python_env
+
+'''
+
+
 import os
 import os.path
 import sys
@@ -6,10 +19,8 @@ import sys
 from settings import BASE_DIR
 
 
-packagedir = os.environ['packagedir']
 
-
-def patch1(env_dir):
+def patch1(env_dir, packagedir):
     """
     rename env/lib/python3.10/site-packages/ldap3/strategy/async.py
         to env/lib/python3.10/site-packages/ldap3/strategy/async_.py
@@ -48,7 +59,7 @@ def patch1(env_dir):
     else:
         print("WARNING: patch1 did not find target line")
 
-def patch2(env_dir):
+def patch2(env_dir, packagedir):
     """
     edit env/lib/python3.10/site-packages/ldap3/utils/ciDict.py
 
@@ -81,10 +92,18 @@ def patch2(env_dir):
 
 
 def main():
+    # absolute path to env directory,
+    # for example: '/home/jon/hunter-repos/cs-auth/env'
     env_dir = os.path.join(BASE_DIR, '..', 'env')
+
+    # relative path to LDAP client package from env root,
+    # for example: 'lib/python3.10/site-packages/ldap3'
+    packagedir = os.environ['packagedir']
+
     print('pyenv directory: ' + env_dir)
-    patch_1_ok = patch1(env_dir)
-    patch_2_ok = patch2(env_dir)
+    print('LDAP client package directory: ' + packagedir)
+    patch_1_ok = patch1(env_dir, packagedir)
+    patch_2_ok = patch2(env_dir, packagedir)
 
     if all([patch_1_ok, patch_2_ok]):
         print("SUCCESS: all patches are applied")
