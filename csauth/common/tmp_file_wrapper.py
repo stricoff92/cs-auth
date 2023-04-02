@@ -18,6 +18,7 @@ class BaseFileWrapper:
     OUT_DIR = NotImplemented
 
     def __init__(self):
+        self._fp = None
         self.name, self.full_path = self._get_new_path()
 
     @property
@@ -26,7 +27,7 @@ class BaseFileWrapper:
 
     @property
     def write_args(self):
-        return (self.full_path, 'w')
+        return (self.full_path, 'a')
 
     @abstractmethod
     def _get_new_name(self) -> str:
@@ -44,10 +45,16 @@ class BaseFileWrapper:
     def remove(self):
         os.remove(self.full_path)
 
-    def _touch(full_path: str) -> str:
+    def _touch(self, full_path: str) -> str:
         with open(full_path, 'w') as _:
             pass
 
+    def __enter__(self):
+        self._fp = open(*self.write_args)
+        return self._fp
+
+    def __exit__(self, *args):
+        self._fp.close()
 
 class TMPFileWrapper(BaseFileWrapper):
     OUT_DIR = TMP_DIR
