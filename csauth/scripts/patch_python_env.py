@@ -5,6 +5,10 @@ import sys
 
 from settings import BASE_DIR
 
+
+packagedir = os.environ['packagedir']
+
+
 def patch1(env_dir):
     """
     rename env/lib/python3.10/site-packages/ldap3/strategy/async.py
@@ -18,12 +22,14 @@ def patch1(env_dir):
     from ..strategy.async_ import AsyncStrategy
     """
 
-    old_path = os.path.join(env_dir, 'lib/python3.10/site-packages/ldap3/strategy/async.py')
-    new_path = os.path.join(env_dir, 'lib/python3.10/site-packages/ldap3/strategy/async_.py')
+    old_path = os.path.join(env_dir, packagedir, 'strategy/async.py')
+    new_path = os.path.join(env_dir, packagedir, 'strategy/async_.py')
+    print(f"renaming '{old_path}' to '{old_path}'")
     os.system(f'mv {old_path} {new_path}')
 
     is_patched = False
-    file_to_edit = os.path.join(env_dir, 'lib/python3.10/site-packages/ldap3/core/connection.py')
+    file_to_edit = os.path.join(env_dir, packagedir, 'core/connection.py')
+    print(f"editing '{file_to_edit}'")
     new_outlines = []
     with open(file_to_edit) as f:
         for line in f:
@@ -51,10 +57,11 @@ def patch2(env_dir):
     to
     class CaseInsensitiveDict(collections.abc.MutableMapping):
     """
-    file_to_edit = os.path.join(env_dir, 'lib/python3.10/site-packages/ldap3/utils/ciDict.py')
+    file_to_edit = os.path.join(env_dir, packagedir, 'utils/ciDict.py')
 
     is_patched = False
     new_outlines = []
+    print(f"editing file '{file_to_edit}'")
     with open(file_to_edit) as f:
         for line in f:
             if not is_patched and line.startswith('class CaseInsensitiveDict(collections.MutableMapping):'):

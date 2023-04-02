@@ -15,5 +15,5 @@ source env/bin/activate
 pip install -r requirements.txt
 
 # Unfortunatly ldap3 library needs to be patched
-./main patch_python_env
+packagedir=lib/python3.10/site-packages/ldap3 ./main patch_python_env
 ```
