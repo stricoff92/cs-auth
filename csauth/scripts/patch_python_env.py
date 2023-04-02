@@ -22,11 +22,11 @@ from settings import BASE_DIR
 
 def patch1(env_dir, packagedir):
     """
-    rename env/lib/python3.10/site-packages/ldap3/strategy/async.py
-        to env/lib/python3.10/site-packages/ldap3/strategy/async_.py
+    rename env/lib/python3.X/site-packages/ldap3/strategy/async.py
+        to env/lib/python3.X/site-packages/ldap3/strategy/async_.py
 
     then edit
-    env/lib/python3.10/site-packages/ldap3/core/connection.py
+    env/lib/python3.X/site-packages/ldap3/core/connection.py
 
     from ..strategy.async import AsyncStrategy
     changes to
@@ -61,7 +61,7 @@ def patch1(env_dir, packagedir):
 
 def patch2(env_dir, packagedir):
     """
-    edit env/lib/python3.10/site-packages/ldap3/utils/ciDict.py
+    edit env/lib/python3.X/site-packages/ldap3/utils/ciDict.py
 
     change
     class CaseInsensitiveDict(collections.MutableMapping):
