@@ -20,7 +20,7 @@ from settings import BASE_DIR
 
 
 
-def patch1(env_dir, packagedir):
+def patch1(console, env_dir, packagedir):
     """
     rename env/lib/python3.X/site-packages/ldap3/strategy/async.py
         to env/lib/python3.X/site-packages/ldap3/strategy/async_.py
@@ -35,12 +35,12 @@ def patch1(env_dir, packagedir):
 
     old_path = os.path.join(env_dir, packagedir, 'strategy/async.py')
     new_path = os.path.join(env_dir, packagedir, 'strategy/async_.py')
-    print(f"renaming '{old_path}' to '{old_path}'")
+    console.debug(f"renaming '{old_path}' to '{old_path}'")
     os.system(f'mv {old_path} {new_path}')
 
     is_patched = False
     file_to_edit = os.path.join(env_dir, packagedir, 'core/connection.py')
-    print(f"editing '{file_to_edit}'")
+    console.debug(f"editing '{file_to_edit}'")
     new_outlines = []
     with open(file_to_edit) as f:
         for line in f:
@@ -54,12 +54,12 @@ def patch1(env_dir, packagedir):
         with open(file_to_edit, 'w') as f:
             for line in new_outlines:
                 f.write(line)
-        print("SUCCESS: patch1 complete")
+        console.debug("SUCCESS: patch1 complete")
         return True
     else:
-        print("WARNING: patch1 did not find target line")
+        console.debug("WARNING: patch1 did not find target line")
 
-def patch2(env_dir, packagedir):
+def patch2(console, env_dir, packagedir):
     """
     edit env/lib/python3.X/site-packages/ldap3/utils/ciDict.py
 
@@ -72,7 +72,7 @@ def patch2(env_dir, packagedir):
 
     is_patched = False
     new_outlines = []
-    print(f"editing file '{file_to_edit}'")
+    console.debug(f"editing file '{file_to_edit}'")
     with open(file_to_edit) as f:
         for line in f:
             if not is_patched and line.startswith('class CaseInsensitiveDict(collections.MutableMapping):'):
@@ -85,13 +85,13 @@ def patch2(env_dir, packagedir):
         with open(file_to_edit, 'w') as f:
             for line in new_outlines:
                 f.write(line)
-        print("SUCCESS: patch2 complete")
+        console.debug("SUCCESS: patch2 complete")
         return True
     else:
-        print("WARNING: patch2 did not find target line")
+        console.debug("WARNING: patch2 did not find target line")
 
 
-def main():
+def main(console):
     # absolute path to env directory,
     # for example: '/home/jon/hunter-repos/cs-auth/env'
     env_dir = os.path.join(BASE_DIR, '..', 'env')
@@ -100,14 +100,14 @@ def main():
     # for example: 'lib/python3.10/site-packages/ldap3'
     packagedir = os.environ['packagedir']
 
-    print('pyenv directory: ' + env_dir)
-    print('LDAP client package directory: ' + packagedir)
-    patch_1_ok = patch1(env_dir, packagedir)
-    patch_2_ok = patch2(env_dir, packagedir)
+    console.debug('pyenv directory: ' + env_dir)
+    console.debug('LDAP client package directory: ' + packagedir)
+    patch_1_ok = patch1(console, env_dir, packagedir)
+    patch_2_ok = patch2(console, env_dir, packagedir)
 
     if all([patch_1_ok, patch_2_ok]):
-        print("SUCCESS: all patches are applied")
+        console.debug("SUCCESS: all patches are applied")
         sys.exit(0)
     else:
-        print("WARNING: not all patches were applied")
+        console.debug("WARNING: not all patches were applied")
         sys.exit(1)
