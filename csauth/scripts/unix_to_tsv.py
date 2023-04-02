@@ -1,7 +1,7 @@
 
 from logging import Logger
 
-from common.tmp_file_wrapper import OutputFileWrapper
+from common.file_wrapper import OutputFileWrapper
 from common.command_runner import CommandRunner
 
 # YP files

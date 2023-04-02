@@ -5,7 +5,7 @@
 
 import os
 
-from common.tmp_file_wrapper import TMPFileWrapper
+from common.file_wrapper import TMPFileWrapper
 
 
 class CommandRunnerError(Exception):
