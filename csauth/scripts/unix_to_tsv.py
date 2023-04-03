@@ -16,17 +16,31 @@ from logging import Logger
 from common.file_wrapper import OutputFileWrapper
 from common.command_runner import CommandRunner
 
+class PasswdLineIXs:
+    """ Indexes of data held in the unix style passwd file
+        index 1 data should always be 'x' indicating the password is
+            hashed and stored in shadow
+    """
+    USER_NAME = 0
+    PLAINTEXT_PASSWORD = 1
+    USER_UID = 2
+    USER_GROUP_GUID = 3
+    USER_DETAILS = 4
+    HOME_DIRECTORY = 5
+    LOGIN_SHELL = 6
+
 
 def _build_output(
+    logger: Logger,
     posix_user_output: OutputFileWrapper,
     posix_group_output: OutputFileWrapper,
     passwd_text: str,
     shadow_text: str,
     group_text: str,
 ):
-    print(passwd_text)
-    print(shadow_text)
-    print(group_text)
+    for passwd_line in passwd_text.split("\n"):
+        passwd_line_parts = passwd_line.split(":")
+
 
 def main(
     logger: Logger,
@@ -47,6 +61,7 @@ def main(
 
     try:
         _build_output(
+            logger,
             posix_user_output,
             posix_group_output,
             cat_passwd_cmd.read_result(),
