@@ -36,4 +36,4 @@ if __name__ == '__main__':
         logger = get_task_logger('add-users')
 
     else:
-        raise ValueError("unrecognized script argument[0] (command name)")
+        raise ValueError(f"unrecognized script argument[0] '{command}' (command name)")

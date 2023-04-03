@@ -1,6 +1,11 @@
 
 import datetime as dt
 import logging
+from logging import (
+    NullHandler,        # For test environment
+    StreamHandler,      # For live environemnt
+    FileHandler,        # "   "    "
+)
 import os.path
 
 import settings
@@ -21,7 +26,7 @@ def _get_report_formatter():
 def get_debug_console_logger(logger_name: str = None) -> logging.Logger:
     logger = logging.getLogger(logger_name if logger_name else __name__)
     logger.setLevel(logging.DEBUG)
-    handler = logging.StreamHandler()
+    handler = NullHandler() if settings.IS_TEST else StreamHandler()
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(_get_logging_formatter(include_name=False))
     logger.addHandler(handler)
@@ -33,13 +38,13 @@ def get_task_logger(logger_name: str):
     logger.setLevel(logging.DEBUG)
 
     # Console logging
-    console_handler = logging.StreamHandler()
+    console_handler = NullHandler() if settings.IS_TEST else logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG)
     console_handler.setFormatter(_get_logging_formatter(include_name=False))
     logger.addHandler(console_handler)
 
     # Log file
-    log_file_handler = logging.FileHandler(
+    log_file_handler = NullHandler() if settings.IS_TEST else FileHandler(
         os.path.join(
             settings.LOGS_DIR,
             dt.datetime.now().strftime(
@@ -52,7 +57,7 @@ def get_task_logger(logger_name: str):
     logger.addHandler(log_file_handler)
 
     # Task Report
-    report_file_handler = logging.FileHandler(
+    report_file_handler = NullHandler() if settings.IS_TEST else FileHandler(
         os.path.join(
             settings.LOGS_DIR,
             dt.datetime.now().strftime(
@@ -66,7 +71,7 @@ def get_task_logger(logger_name: str):
     logger.addHandler(report_file_handler)
 
     logger.debug("task logger instantiated")
-    logger.debug(f"   .log file {log_file_handler.baseFilename}")
-    logger.debug(f".report file {report_file_handler.baseFilename}")
+    logger.debug(f"   .log file {getattr(log_file_handler, 'baseFilename', 'NONE')}")
+    logger.debug(f".report file {getattr(report_file_handler, 'baseFilename', 'NONE')}")
 
     return logger
