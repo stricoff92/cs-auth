@@ -63,7 +63,10 @@ class CommandRunner:
                 "Command did not run yet."
             )
         if self._exit_code != 0:
-            raise NonZeroExitCodeError
+            result = self.read_result() if self._output_available else None
+            raise NonZeroExitCodeError(
+                f'got exit code {self._exit_code} for command "{self._command}" -> "{result}"'
+            )
 
     def read_result(self) -> str:
         self._validate_can_interact_with_saved_result()

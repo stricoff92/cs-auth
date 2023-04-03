@@ -1,40 +1,57 @@
 
+"""
+Consolidate unix passwd, shadow, and group
+    files into an interchange format (2x .tsv files)
+
+    .tsv USER  file: holds info for PosixUser type  (passwd + shadow data)
+    .tsv GROUP file: holds info for PoxixGroup type (passwd + group data)
+
+    These 2 files holding interchange formatted data
+    can be imported into OpenLDAP using 'object_load' script.
+"""
+
+
 from logging import Logger
 
 from common.file_wrapper import OutputFileWrapper
 from common.command_runner import CommandRunner
 
-# YP files
-PASSWD_FILE = '/var/yp/passwd'
-SHADOW_FILE = '/var/yp/shadow'
-GROUP_FILE = '/etc/group'
-
-# Regular UNIX files
-# PASSWD_FILE = '/etc/passwd'
-# SHADOW_FILE = '/etc/shadow'
-# GROUP_FILE = '/etc/group'
 
 def _build_output(
-    output: OutputFileWrapper,
-    cat_passwd_cmd,
-    cat_shadow_cmd,
-    cat_group_cmd
+    posix_user_output: OutputFileWrapper,
+    posix_group_output: OutputFileWrapper,
+    passwd_text: str,
+    shadow_text: str,
+    group_text: str,
 ):
-    pass
+    print(passwd_text)
+    print(shadow_text)
+    print(group_text)
 
-def main(logger: Logger):
+def main(
+    logger: Logger,
+    passwd_file_name,
+    shadow_file_name,
+    group_file_name,
+):
     logger.info("unix_to_tsv::main()")
-    output = OutputFileWrapper()
-    cat_passwd_cmd = CommandRunner(f'cat {PASSWD_FILE}')
-    cat_shadow_cmd = CommandRunner(f'cat {SHADOW_FILE}')
-    cat_group_cmd = CommandRunner(f'cat {GROUP_FILE}')
+    logger.info("passwd file " + passwd_file_name)
+    logger.info("shadow file " + shadow_file_name)
+    logger.info("group file " + group_file_name)
+
+    posix_user_output = OutputFileWrapper()
+    posix_group_output = OutputFileWrapper()
+    cat_passwd_cmd = CommandRunner(f'cat {passwd_file_name}')
+    cat_shadow_cmd = CommandRunner(f'cat {shadow_file_name}')
+    cat_group_cmd = CommandRunner(f'cat {group_file_name}')
 
     try:
         _build_output(
-            output,
-            cat_passwd_cmd,
-            cat_shadow_cmd,
-            cat_group_cmd,
+            posix_user_output,
+            posix_group_output,
+            cat_passwd_cmd.read_result(),
+            cat_shadow_cmd.read_result(),
+            cat_group_cmd.read_result(),
         )
     except Exception:
         raise

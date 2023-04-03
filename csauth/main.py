@@ -30,7 +30,20 @@ if __name__ == '__main__':
         patch_python_env(console)
 
     elif command == COMMANDS.unix_to_tsv:
-        unix_to_tsv(console)
+        try:
+            passwd_file_name = args[1]
+            shadow_file_name = args[2]
+            group_file_name = args[3]
+        except IndexError:
+            raise ValueError(
+                "argument[1], argument[2], argument[3] are requried (passwd, shadow, group file paths)"
+            )
+        unix_to_tsv(
+            console,
+            passwd_file_name,
+            shadow_file_name,
+            group_file_name,
+        )
 
     elif command == COMMANDS.add_users:
         logger = get_task_logger('add-users')
