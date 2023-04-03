@@ -7,7 +7,9 @@ from common import script_logger as sl
 class TestScriptLogger(TestCase):
 
     def test_debug_logger_is_created_with_1_debug_handler(self):
+        # Act.
         logger = sl.get_debug_console_logger('test-debug-logger')
+        # Assert.
         self.assertIsInstance(logger, Logger)
         self.assertEqual(len(logger.handlers), 1)
         self.assertEqual(logger.handlers[0].level, DEBUG)
