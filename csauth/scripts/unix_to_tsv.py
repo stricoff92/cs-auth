@@ -48,6 +48,13 @@ class GroupLineIXs:
     GROUP_GUID = 2
     GROUP_MEMBERS = 3
 
+GROUPS_TO_SKIP = frozenset([
+    'mail',
+    'wheel',
+    'audio',
+    'pkcs11',
+])
+
 def _build_output(
     logger: Logger,
     posix_user_output: OutputFileWrapper,
@@ -123,6 +130,9 @@ def _build_output(
                 logger.warning(
                     f"skipping group line. has incorrect number of parts: {group_line_parts}"
                 )
+                continue
+
+            if group_line_parts[GroupLineIXs.GROUP_NAME] in GROUPS_TO_SKIP:
                 continue
 
             if not group_line_parts[GroupLineIXs.GROUP_MEMBERS].strip():
