@@ -63,7 +63,14 @@ class TMPFileWrapper(BaseFileWrapper):
 
 class OutputFileWrapper(BaseFileWrapper):
     OUT_DIR = OUTPUTS_DIR
+
+    def __init__(self, report_name: str, file_extension: str, *a, **k):
+        self._report_name = report_name
+        self._file_extension = file_extension
+        super().__init__(*a, **k)
+
+
     def _get_new_name(self):
         return dt.datetime.now().strftime(
-            '%Y-%m-%d_%H%M%S%f'
+            '%Y-%m-%d_%H%M%S%f' + '_' + self._report_name + '.' + self._file_extension
         )
