@@ -42,7 +42,7 @@ if __name__ == '__main__':
     console = get_debug_console_logger()
 
     args = sys.argv[1:]
-    console.info(f'csauth args: {args}')
+    console.debug(f'csauth args: {args}')
 
     try:
         command = args[0]
@@ -52,6 +52,7 @@ if __name__ == '__main__':
     # Test & Development scripts
     if command == COMMANDS.patch_python_env:
         patch_python_env(console)
+
     elif command == COMMANDS.unix_to_tsv:
         try:
             passwd_file_name = args[1]
@@ -67,6 +68,7 @@ if __name__ == '__main__':
             shadow_file_name,
             group_file_name,
         )
+
     elif command == COMMANDS.load_tsv:
         try:
             posix_user_tsv_path = args[1]
@@ -78,7 +80,7 @@ if __name__ == '__main__':
         logger = get_task_logger('load-tsv')
         load_tsv(logger, posix_user_tsv_path, posix_group_tsv_path)
 
-    # Management scripts
+    # Day to day management scripts
     elif command == COMMANDS.add_users:
         logger = get_task_logger('add-users')
 
