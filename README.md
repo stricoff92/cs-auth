@@ -2,7 +2,7 @@
 
 ## Installation
 
-README assumes you're using python 3.10. This readme should get updated in the future. Unfortunatly the python ldap client doesn't work out of the box with python3.10 until the library is patched. This may change with future updates. The patching that's required may also change in the future.
+README assumes you're using python 3.10. This readme should get updated in the future. The python ldap client doesn't work out of the box with python3.10 until the library is patched. This may change with future updates. The patching that's required may also change in the future.
 
 
 ```bash
