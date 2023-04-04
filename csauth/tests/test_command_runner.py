@@ -11,7 +11,13 @@ class TestCommandRunner(TestCase):
         # Act
         cmd = CommandRunner("echo 'hello world'", get_output=True)
         # Assert
-        self.assertEqual(cmd.read_result(), 'hello world\n')
+        try:
+            self.assertEqual(cmd.read_result(), 'hello world\n')
+        except Exception:
+            raise
+        finally:
+            # Clean up
+            cmd.delete_results()
 
     def test_command_runner_can_create_and_delete_tmp_files_to_hold_outputs(self):
         # Arrange
@@ -38,6 +44,7 @@ class TestCommandRunner(TestCase):
         self.assertRaises(NonZeroExitCodeError, cmd.run_command)
 
     def test_command_runner_can_delay_raising_non_zero_exit_code_error(self):
+        # Arrange
         cmd = CommandRunner(
             "false", # A useless command that results in an exit code of 1.
             get_output=False,

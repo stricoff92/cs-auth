@@ -1,3 +1,4 @@
 #!/bin/bash
 
+# Application entry point
 env/bin/python3 csauth/main.py "$@"

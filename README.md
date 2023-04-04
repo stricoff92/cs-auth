@@ -19,6 +19,13 @@ python3 -m venv env
 source env/bin/activate
 pip install -r requirements.txt
 
-# Unfortunatly ldap3 library needs to be patched
+# ldap3 library needs to be patched for python3.10
 ldappackagedir=/home/jon/hunter-repos/cs-auth/env/lib/python3.10/site-packages/ldap3 ./main patch_python_env
 ```
+
+```bash
+# Run unit tests
+
+./test
+```
+

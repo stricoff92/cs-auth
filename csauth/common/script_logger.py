@@ -63,7 +63,6 @@ def get_task_logger(logger_name: str):
             dt.datetime.now().strftime(
                 '%Y-%m-%d_%H%M%S'
             ) + '_' + logger_name + '.report',
-
         )
     )
     report_file_handler.setLevel(logging.INFO)
