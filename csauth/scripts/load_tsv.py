@@ -7,8 +7,10 @@
 import csv
 from logging import Logger
 
-from applocals import LDAP_ADMIN_PASSWORD_BASE64
-from common import security_helpers
+from ldap3 import ALL_ATTRIBUTES
+
+from common import ldap_helpers
+from applocals import LDAP_ADMIN_DN, LDAP_SERVER_DOMAIN_COMPONENTS
 
 def main(
         logger: Logger,
@@ -17,12 +19,21 @@ def main(
 ) -> None:
     logger.debug("load_tsv::main()")
 
-    # Read interchange formatted data from .tsv files into memory
-    logger.debug('reading ' + posix_user_tsv_path)
-    with open(posix_user_tsv_path) as f:
-        user_tsv_rows = list(csv.reader(f, delimiter='\t'))
-    logger.debug('reading ' + posix_group_tsv_path)
-    with open(posix_group_tsv_path) as f:
-        group_tsv_rows = list(csv.reader(f, delimiter='\t'))
-    logger.info(f"found {len(user_tsv_rows)} user rows to import")
-    logger.info(f"found {len(group_tsv_rows)} group rows to import")
+    # # Read interchange formatted data from .tsv files into memory
+    # logger.debug('reading ' + posix_user_tsv_path)
+    # with open(posix_user_tsv_path) as f:
+    #     user_tsv_rows = list(csv.reader(f, delimiter='\t'))
+    # logger.debug('reading ' + posix_group_tsv_path)
+    # with open(posix_group_tsv_path) as f:
+    #     group_tsv_rows = list(csv.reader(f, delimiter='\t'))
+    # logger.info(f"found {len(user_tsv_rows)} user rows to import")
+    # logger.info(f"found {len(group_tsv_rows)} group rows to import")
+
+
+    conn = ldap_helpers.new_connection()
+
+    exists = ldap_helpers.dn_exists(conn, 'cn=teststudent,ou=people,ou=linuxlab')
+    print('exists', exists),
+
+    print("bye!")
+    conn.unbind()
