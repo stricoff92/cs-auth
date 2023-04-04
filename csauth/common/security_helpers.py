@@ -55,6 +55,6 @@ def validate_applocals_file():
     # Check public has no access
     if public_can_read or public_can_write:
         raise ApplocalsFileInvalidConfigurationError(
-            'applocals.py has incorrect permissions. GROUP CAN READ/WRTIE. '
+            'applocals.py has incorrect permissions. PUBLIC CAN READ/WRTIE. '
             + 'Run command "chmod 600 applocals.py"'
         )
