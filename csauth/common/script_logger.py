@@ -1,3 +1,6 @@
+""" Factories for creating logging.Logger instances.
+"""
+
 
 import datetime as dt
 import logging
@@ -18,7 +21,7 @@ def _get_logging_formatter(include_name=True) -> logging.Formatter:
         '%(asctime)s %(levelname)s %(message)s'
     )
 
-def _get_report_formatter():
+def _get_report_formatter() -> logging.Formatter:
     return logging.Formatter(
         '%(levelname)s %(message)s'
     )
@@ -33,7 +36,7 @@ def get_debug_console_logger(logger_name: str = None) -> logging.Logger:
     logger.debug("debug console logger instantiated")
     return logger
 
-def get_task_logger(logger_name: str):
+def get_task_logger(logger_name: str) -> logging.Logger:
     logger = logging.getLogger(logger_name)
     logger.setLevel(logging.DEBUG)
 

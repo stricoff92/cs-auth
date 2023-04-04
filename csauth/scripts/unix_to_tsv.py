@@ -129,7 +129,7 @@ def main(
     passwd_file_name,
     shadow_file_name,
     group_file_name,
-):
+) -> None:
     logger.info("unix_to_tsv::main()")
     logger.info("passwd file " + passwd_file_name)
     logger.info("shadow file " + shadow_file_name)

@@ -1,4 +1,7 @@
 
+""" Misc. security related functions
+"""
+
 import base64
 import os.path
 import stat
@@ -22,7 +25,7 @@ class ApplocalsFileNotFoundError(ApplocalsError):
 class ApplocalsFileInvalidConfigurationError(ApplocalsError):
     pass
 
-def validate_applocals_file():
+def validate_applocals_file() -> None:
     locals_file_path = os.path.join(BASE_DIR, 'applocals.py')
 
     # check file exists

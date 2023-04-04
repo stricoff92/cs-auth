@@ -15,13 +15,14 @@
 import os
 import os.path
 import sys
+from typing import Optional
 
 from common.command_runner import CommandRunner
 from settings import BASE_DIR
 
 
 
-def patch1(console, ldappackagedir):
+def patch1(console, ldappackagedir) -> Optional[bool]:
     """
     rename env/lib/python3.X/site-packages/ldap3/strategy/async.py
         to env/lib/python3.X/site-packages/ldap3/strategy/async_.py
@@ -73,7 +74,7 @@ def patch1(console, ldappackagedir):
     else:
         console.debug("WARNING: patch1 did not find target line")
 
-def patch2(console, ldappackagedir):
+def patch2(console, ldappackagedir) -> Optional[bool]:
     """
     edit env/lib/python3.X/site-packages/ldap3/utils/ciDict.py
 
@@ -108,7 +109,7 @@ def patch2(console, ldappackagedir):
         console.debug("WARNING: patch2 did not find target line")
 
 
-def main(console):
+def main(console) -> None:
     # absolute path to package directory,
     # for example: '/home/jon/hunter-repos/cs-auth/env/lib/python3.10/site-packages/ldap3'
     ldappackagedir = os.environ['ldappackagedir']

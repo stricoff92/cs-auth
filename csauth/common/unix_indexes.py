@@ -1,4 +1,9 @@
 
+""" Unified location to hold
+    list indexes that correspond row columns in
+    passwd, shadow, and group
+"""
+
 class PasswdLineIXs:
     """ Indexes of data held in the unix style passwd file
         index 1 data should always be 'x' indicating the password is
