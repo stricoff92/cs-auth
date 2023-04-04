@@ -5,7 +5,7 @@
         > Perform basic CRUD operations against the LDAP server.
 """
 
-from typing import Optional
+from typing import Optional, Dict
 
 from ldap3 import (
     Server as LDAPServer,
@@ -24,6 +24,16 @@ from common import security_helpers
 ALL_CLASSES_SEARCH_FILTER = '(objectClass=*)'
 POSIX_USER_SEARCH_FILTER = '(objectClass=posixAccount)'
 POSIX_GROUP_SEARCH_FILTER = '(objectClass=posixGroup)'
+
+
+class BaseLDAPCRUDError(Exception):
+    pass
+
+class PosixUserAlreadyExistsError(BaseLDAPCRUDError):
+    pass
+
+class PosixGroupAlreadyExistsError(BaseLDAPCRUDError):
+    pass
 
 
 # LDAP factories # # #
@@ -66,20 +76,27 @@ def _add_base_domain_components_to_dn(dn: str) -> str:
         cleaned_dn += f',{LDAP_SERVER_DOMAIN_COMPONENTS}'
     return cleaned_dn
 
+
 def _get_posix_user_dn(cn: str) -> str:
     """ given a common name, create a propper dn for a posix user.
     """
-    return _add_base_domain_components_to_dn(f'cn={cn},ou=people,ou=linuxlab')
+    return _add_base_domain_components_to_dn(
+        f'cn={cn},ou=people,ou=linuxlab'
+    )
+
 
 def _get_posix_group_dn(cn: str) -> str:
     """ given a common name, create a propper dn for a posix group.
     """
-    return _add_base_domain_components_to_dn(f'cn={cn},ou=groups,ou=linuxlab')
+    return _add_base_domain_components_to_dn(
+        f'cn={cn},ou=groups,ou=linuxlab'
+    )
 
 
 
 # LDAP CRUD methods
 
+# Private methods.
 def _dn_exists(conn: LDAPConnection, dn: str, class_filter=None) -> bool:
     return conn.search(
         dn,
@@ -87,6 +104,8 @@ def _dn_exists(conn: LDAPConnection, dn: str, class_filter=None) -> bool:
         paged_size=1,
     )
 
+
+# Public methods.
 def posix_user_exists(conn: LDAPConnection, cn: str) -> bool:
     return _dn_exists(
         conn,
@@ -94,9 +113,35 @@ def posix_user_exists(conn: LDAPConnection, cn: str) -> bool:
         class_filter=POSIX_USER_SEARCH_FILTER,
     )
 
+
 def posix_group_exists(conn: LDAPConnection, cn: str) -> bool:
     return _dn_exists(
         conn,
         _get_posix_group_dn(cn),
         class_filter=POSIX_GROUP_SEARCH_FILTER,
     )
+
+
+def add_posix_user(
+    conn: LDAPConnection,
+    cn: str,
+    attrs: Dict,
+):
+    if posix_user_exists(conn, cn):
+        raise PosixUserAlreadyExistsError
+
+    dn = _get_posix_user_dn(cn)
+
+
+def add_posix_group(
+    conn: LDAPConnection,
+    cn: str,
+    attrs: Dict,
+):
+    if posix_group_exists(conn, cn):
+        raise PosixGroupAlreadyExistsError
+
+    dn = _get_posix_user_dn(cn)
+
+
+
