@@ -32,8 +32,11 @@ def main(
 
     conn = ldap_helpers.new_connection()
 
-    exists = ldap_helpers.dn_exists(conn, 'cn=teststudent,ou=people,ou=linuxlab')
-    print('exists', exists),
+    teststudent = ldap_helpers.posix_user_exists(conn, 'teststudent')
+    print('teststudent', teststudent)
+
+    student = ldap_helpers.posix_group_exists(conn, 'student')
+    print('student', student)
 
     print("bye!")
     conn.unbind()

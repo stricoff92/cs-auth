@@ -22,6 +22,8 @@ from common import security_helpers
 
 
 ALL_CLASSES_SEARCH_FILTER = '(objectClass=*)'
+POSIX_USER_SEARCH_FILTER = '(objectClass=posixAccount)'
+POSIX_GROUP_SEARCH_FILTER = '(objectClass=posixGroup)'
 
 
 # LDAP factories # # #
@@ -50,7 +52,7 @@ def new_connection(
 
 # distinguished/common name helpers # # #
 
-def add_base_dn(dn: str) -> str:
+def _add_base_domain_components_to_dn(dn: str) -> str:
     """ Check if a distinguished name is missing base dc parts.
         If dn is missing base dc parts add them.
     """
@@ -64,30 +66,37 @@ def add_base_dn(dn: str) -> str:
         cleaned_dn += f',{LDAP_SERVER_DOMAIN_COMPONENTS}'
     return cleaned_dn
 
-def get_posix_user_dn(cn: str) -> str:
+def _get_posix_user_dn(cn: str) -> str:
     """ given a common name, create a propper dn for a posix user.
     """
-    return add_base_dn(f'cn={cn},ou=people,ou=linuxlab')
+    return _add_base_domain_components_to_dn(f'cn={cn},ou=people,ou=linuxlab')
 
-def get_posix_group_dn(cn: str) -> str:
+def _get_posix_group_dn(cn: str) -> str:
     """ given a common name, create a propper dn for a posix group.
     """
-    return add_base_dn(f'cn={cn},ou=groups,ou=linuxlab')
+    return _add_base_domain_components_to_dn(f'cn={cn},ou=groups,ou=linuxlab')
 
 
 
 # LDAP CRUD methods
 
-def dn_exists(conn: LDAPConnection, dn: str, class_filter=None) -> bool:
-    search_dn = add_base_dn(dn)
+def _dn_exists(conn: LDAPConnection, dn: str, class_filter=None) -> bool:
     return conn.search(
-        search_dn,
+        dn,
         class_filter if class_filter else ALL_CLASSES_SEARCH_FILTER,
         paged_size=1,
     )
 
 def posix_user_exists(conn: LDAPConnection, cn: str) -> bool:
-    return dn_exists(conn, get_posix_user_dn(cn))
+    return _dn_exists(
+        conn,
+        _get_posix_user_dn(cn),
+        class_filter=POSIX_USER_SEARCH_FILTER,
+    )
 
 def posix_group_exists(conn: LDAPConnection, cn: str) -> bool:
-    return dn_exists(conn, get_posix_group_dn(cn))
+    return _dn_exists(
+        conn,
+        _get_posix_group_dn(cn),
+        class_filter=POSIX_GROUP_SEARCH_FILTER,
+    )
