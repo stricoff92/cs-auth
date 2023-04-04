@@ -21,11 +21,13 @@ from applocals import (
 from common import security_helpers
 
 
+# Search Filters.
 ALL_CLASSES_SEARCH_FILTER = '(objectClass=*)'
 POSIX_USER_SEARCH_FILTER = '(objectClass=posixAccount)'
 POSIX_GROUP_SEARCH_FILTER = '(objectClass=posixGroup)'
 
 
+# Errors.
 class BaseLDAPCRUDError(Exception):
     pass
 
@@ -33,6 +35,12 @@ class PosixUserAlreadyExistsError(BaseLDAPCRUDError):
     pass
 
 class PosixGroupAlreadyExistsError(BaseLDAPCRUDError):
+    pass
+
+class InvalidPosixUserAttributesError(BaseLDAPCRUDError):
+    pass
+
+class InvalidPosixGroupAttributesError(BaseLDAPCRUDError):
     pass
 
 

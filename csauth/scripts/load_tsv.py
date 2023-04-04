@@ -7,10 +7,7 @@
 import csv
 from logging import Logger
 
-from ldap3 import ALL_ATTRIBUTES
-
 from common import ldap_helpers
-from applocals import LDAP_ADMIN_DN, LDAP_SERVER_DOMAIN_COMPONENTS
 
 def main(
         logger: Logger,
