@@ -6,6 +6,21 @@ README assumes you're using python 3.10. This readme should get updated in the f
 
 
 ```bash
+# create applocals file
+touch csauth/applocals.py
+chmod 600 csauth/applocals.py
+```
+
+Example `applocals.py` file
+```
+LDAP_SERVER_HOST = 'cs-auth'
+LDAP_SERVER_DOMAIN_COMPONENTS = 'dc=cs,dc=hunter,dc=cuny,dc=edu'
+LDAP_ADMIN_DN = f'cn=admin,{LDAP_SERVER_DOMAIN_COMPONENTS}'
+LDAP_ADMIN_PASSWORD_BASE64 = 'BASE_64_ENCODED_PW_GOES_HERE'
+```
+
+
+```bash
 # Install needed packages.
 
 sudo apt-get install python3.10-venv python3-dev libsasl2-dev libldap2-dev libssl-dev libldb-dev libldap2-dev

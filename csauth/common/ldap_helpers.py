@@ -22,6 +22,8 @@ from common import security_helpers
 
 
 def new_server(host_name: Optional[str] = None) -> LDAPServer:
+    ''' Factory for creating a new Server instance
+    '''
     ldap_host = host_name if host_name else LDAP_SERVER_HOST
     return LDAPServer(ldap_host)
 
@@ -32,6 +34,8 @@ def new_connection(
         admin_pwd: Optional[str] = None,
         auto_bind: bool = True,
 ) -> LDAPConnection:
+    ''' Factory for creating a new Connection instance.
+    '''
     return LDAPConnection(
         server if server else new_server(),
         admin_dn if admin_dn else LDAP_ADMIN_DN,
