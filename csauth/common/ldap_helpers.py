@@ -156,7 +156,7 @@ def posix_group_exists(conn: LDAPConnection, cn: str) -> bool:
 def get_posix_user(
     conn: LDAPConnection,
     cn: str,
-):
+) -> Dict:
     found = conn.search(
         _get_posix_user_dn(cn),
         POSIX_USER_SEARCH_FILTER,
@@ -171,7 +171,7 @@ def get_posix_user(
 def get_posix_group(
     conn: LDAPConnection,
     cn: str,
-):
+) -> Dict:
     found = conn.search(
         _get_posix_group_dn(cn),
         POSIX_GROUP_SEARCH_FILTER,
