@@ -3,7 +3,9 @@
 """
 
 import base64
+import crypt # TODO: this is removed in future versions of python.
 import os.path
+import random
 import stat
 
 from settings import BASE_DIR
@@ -15,6 +17,18 @@ def b64encode(val: str) -> str:
 def b64decode(val: str) -> str:
     return base64.b64decode(val.encode()).decode()
 
+
+def new_plaintext_password() -> str:
+    chars = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    return ''.join(random.SystemRandom().choice(chars) for _ in range(10))
+
+def new_salt() -> str:
+    chars = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789./'
+    return ''.join(random.SystemRandom().choice(chars) for _ in range(8))
+
+def hash_password(plaintext_password: str) -> str:
+    prefix = ''.join(chr(v) for v in  [123, 99, 114, 121, 112, 116, 125]) # '{crypt}'
+    return prefix + crypt.crypt(plaintext_password, f'$6${new_salt()}')
 
 class ApplocalsError(Exception):
     pass

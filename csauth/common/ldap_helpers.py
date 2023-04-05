@@ -23,33 +23,39 @@ from applocals import (
 from common import security_helpers
 
 
-# Search Filters.
+
 ALL_CLASSES_SEARCH_FILTER = '(objectClass=*)'
 POSIX_USER_SEARCH_FILTER = '(objectClass=posixAccount)'
 POSIX_GROUP_SEARCH_FILTER = '(objectClass=posixGroup)'
 
+POSIX_USER_CLASS_LIST = [
+    'account', 'posixAccount', 'shadowAccount', 'top',
+]
+POSIX_GROUP_CLASS_LIST = [
+    'posixGroup', 'top',
+]
 
 # Errors.
-class BaseLDAPCRUDError(Exception):
+class LDAPCRUDError(Exception):
     pass
 
 class LDAPObjectNotFoundError(Exception):
     pass
 
-class PosixUserAlreadyExistsError(BaseLDAPCRUDError):
+class PosixUserAlreadyExistsError(LDAPCRUDError):
     pass
 
-class PosixGroupAlreadyExistsError(BaseLDAPCRUDError):
+class PosixGroupAlreadyExistsError(LDAPCRUDError):
     pass
 
-class InvalidPosixUserAttributesError(BaseLDAPCRUDError):
+class InvalidPosixUserAttributesError(LDAPCRUDError):
     pass
 
-class InvalidPosixGroupAttributesError(BaseLDAPCRUDError):
+class InvalidPosixGroupAttributesError(LDAPCRUDError):
     pass
 
 
-# LDAP factories # # #
+# LDAP client factories # # #
 
 def new_server(host_name: Optional[str] = None) -> LDAPServer:
     ''' Factory for creating a new Server instance
@@ -74,7 +80,6 @@ def new_connection(
 
 
 # distinguished/common name helpers # # #
-
 def _add_base_domain_components_to_dn(dn: str) -> str:
     """ Check if a distinguished name is missing base dc parts.
         If dn is missing base dc parts add them.
@@ -105,6 +110,32 @@ def _get_posix_group_dn(cn: str) -> str:
         f'cn={cn},ou=groups,ou=linuxlab'
     )
 
+# Low Level LDAP CRUD methods
+
+def _dn_exists(conn: LDAPConnection, dn: str, class_filter=None) -> bool:
+    return conn.search(
+        dn,
+        class_filter if class_filter else ALL_CLASSES_SEARCH_FILTER,
+        paged_size=1,
+    )
+
+
+def posix_user_exists(conn: LDAPConnection, cn: str) -> bool:
+    return _dn_exists(
+        conn,
+        _get_posix_user_dn(cn),
+        class_filter=POSIX_USER_SEARCH_FILTER,
+    )
+
+
+def posix_group_exists(conn: LDAPConnection, cn: str) -> bool:
+    return _dn_exists(
+        conn,
+        _get_posix_group_dn(cn),
+        class_filter=POSIX_GROUP_SEARCH_FILTER,
+    )
+
+
 def _ldap_entry_to_dict(entry: LDAPEntry) -> Dict:
     """ Convert an ldap entry to a python dict.
     """
@@ -125,33 +156,10 @@ def _ldap_entry_to_dict(entry: LDAPEntry) -> Dict:
             out[k] = entry_dict[k]
     return out
 
-
-# LDAP CRUD methods
-
-# Private methods.
-def _dn_exists(conn: LDAPConnection, dn: str, class_filter=None) -> bool:
-    return conn.search(
-        dn,
-        class_filter if class_filter else ALL_CLASSES_SEARCH_FILTER,
-        paged_size=1,
-    )
-
-
-# Public methods.
-def posix_user_exists(conn: LDAPConnection, cn: str) -> bool:
-    return _dn_exists(
-        conn,
-        _get_posix_user_dn(cn),
-        class_filter=POSIX_USER_SEARCH_FILTER,
-    )
-
-
-def posix_group_exists(conn: LDAPConnection, cn: str) -> bool:
-    return _dn_exists(
-        conn,
-        _get_posix_group_dn(cn),
-        class_filter=POSIX_GROUP_SEARCH_FILTER,
-    )
+def validate_response_is_success(resp: Dict):
+    if resp.get('description') == 'success':
+        return
+    raise LDAPCRUDError
 
 def get_posix_user(
     conn: LDAPConnection,
@@ -192,6 +200,12 @@ def add_posix_user(
         raise PosixUserAlreadyExistsError
 
     dn = _get_posix_user_dn(cn)
+    conn.add(
+        dn,
+        POSIX_USER_CLASS_LIST,
+        attrs,
+    )
+    return conn.result
 
 
 def add_posix_group(
@@ -202,4 +216,36 @@ def add_posix_group(
     if posix_group_exists(conn, cn):
         raise PosixGroupAlreadyExistsError
 
-    dn = _get_posix_user_dn(cn)
+    dn = _get_posix_group_dn(cn)
+    conn.add(
+        dn,
+        POSIX_GROUP_CLASS_LIST,
+        attrs,
+    )
+    return conn.result
+
+
+# LDAP entry attribute factories # # #
+
+def create_posix_user_entry_dict(
+        username: str,
+        uidNumber: str,
+        gidNumber: int,
+        fullname: str,
+        homeDirectory: str,
+        hashedUserPassword: bytes,
+        loginShell,
+) -> Dict:
+    return {
+        'cn': username,
+        'uid': username,
+        'uidNumber': uidNumber,
+        'gidNumber': gidNumber,
+        'homeDirectory': homeDirectory,
+        'loginShell': loginShell,
+        'gecos': fullname,
+        'userPassword': hashedUserPassword,
+        'shadowLastChange': 0,
+        'shadowMax': 99999,
+        'shadowWarning': 720,
+    }
