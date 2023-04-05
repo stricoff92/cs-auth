@@ -10,7 +10,9 @@ from typing import Optional, Dict
 from ldap3 import (
     Server as LDAPServer,
     Connection as LDAPConnection,
+    ALL_ATTRIBUTES,
 )
+from ldap3.abstract.entry import Entry as LDAPEntry
 
 from applocals import (
     LDAP_SERVER_HOST,
@@ -29,6 +31,9 @@ POSIX_GROUP_SEARCH_FILTER = '(objectClass=posixGroup)'
 
 # Errors.
 class BaseLDAPCRUDError(Exception):
+    pass
+
+class LDAPObjectNotFoundError(Exception):
     pass
 
 class PosixUserAlreadyExistsError(BaseLDAPCRUDError):
@@ -100,6 +105,25 @@ def _get_posix_group_dn(cn: str) -> str:
         f'cn={cn},ou=groups,ou=linuxlab'
     )
 
+def _ldap_entry_to_dict(entry: LDAPEntry) -> Dict:
+    """ Convert an ldap entry to a python dict.
+    """
+    entry_dict = entry.entry_attributes_as_dict
+    out = {}
+    for k in entry_dict.keys():
+        if not isinstance(entry_dict[k], list):
+            raise NotImplementedError(
+                f"expected a list, got {type(entry_dict[k])}"
+            )
+        elif len(entry_dict[k]) == 0:
+            raise NotImplementedError("expected a length > 0")
+        elif len(entry_dict[k]) == 1:
+            # only 1 element in this list. Pop value and remove the list.
+            out[k] = entry_dict[k][0]
+        else:
+            # This attribute is multi-valued, so leave it as a list.
+            out[k] = entry_dict[k]
+    return out
 
 
 # LDAP CRUD methods
@@ -129,6 +153,35 @@ def posix_group_exists(conn: LDAPConnection, cn: str) -> bool:
         class_filter=POSIX_GROUP_SEARCH_FILTER,
     )
 
+def get_posix_user(
+    conn: LDAPConnection,
+    cn: str,
+):
+    found = conn.search(
+        _get_posix_user_dn(cn),
+        POSIX_USER_SEARCH_FILTER,
+        paged_size=1,
+        attributes=ALL_ATTRIBUTES,
+    )
+    if not found:
+        raise LDAPObjectNotFoundError
+    return _ldap_entry_to_dict(conn.entries[0])
+
+
+def get_posix_group(
+    conn: LDAPConnection,
+    cn: str,
+):
+    found = conn.search(
+        _get_posix_group_dn(cn),
+        POSIX_GROUP_SEARCH_FILTER,
+        paged_size=1,
+        attributes=ALL_ATTRIBUTES,
+    )
+    if not found:
+        raise LDAPObjectNotFoundError
+    return _ldap_entry_to_dict(conn.entries[0])
+
 
 def add_posix_user(
     conn: LDAPConnection,
@@ -150,6 +203,3 @@ def add_posix_group(
         raise PosixGroupAlreadyExistsError
 
     dn = _get_posix_user_dn(cn)
-
-
-
