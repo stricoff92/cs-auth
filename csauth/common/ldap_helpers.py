@@ -15,6 +15,7 @@ from ldap3 import (
     Server as LDAPServer,
     Connection as LDAPConnection,
     ALL_ATTRIBUTES,
+    MODIFY_REPLACE,
 )
 from ldap3.abstract.entry import Entry as LDAPEntry
 
@@ -152,8 +153,15 @@ def _ldap_entry_to_dict(entry: LDAPEntry) -> Dict:
             )
         elif len(entry_dict[k]) == 0:
             raise NotImplementedError("expected a length > 0")
-        elif len(entry_dict[k]) == 1:
-            # only 1 element in this list. Pop value and remove the list.
+        elif (
+            len(entry_dict[k]) == 1
+            and (
+                'posixGroup' not in entry_dict['objectClass']
+                or k != 'memberUid'
+            )
+        ):
+            # only 1 element in this list. Pop value and remove the list
+            # if it's not a posixGroup::memberUid attribute
             out[k] = entry_dict[k][0]
         else:
             # This attribute is multi-valued, so leave it as a list.
@@ -226,6 +234,19 @@ def add_posix_group(
         POSIX_GROUP_CLASS_LIST,
         attrs,
     )
+    return conn.result
+
+
+def set_posix_group_members(
+    conn: LDAPConnection,
+    cn: str,
+    memberUids: List[str],
+):
+    dn = _get_posix_group_dn(cn)
+    changes = {
+        'memberUid': [(MODIFY_REPLACE, memberUids,)],
+    }
+    conn.modify(dn, changes)
     return conn.result
 
 

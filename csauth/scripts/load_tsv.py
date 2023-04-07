@@ -69,7 +69,7 @@ def main(
                 logger.info(
                     f"not adding user {username}({uidNumber}) cn already exists"
                 )
-                summary['skipped_user <already exists>'] += 1
+                summary['skipped_user_add <already exists>'] += 1
                 continue
 
             userPassword = (
@@ -118,9 +118,46 @@ def main(
 
             if ldap.posix_group_exists(conn, name):
                 logger.info(
-                    f"not adding group {name}({gid}) cn already exists"
+                    f"not adding group {name}({gid}) cn already exists."
+                    + "Checking membership..."
                 )
-                summary['skipped_group <already exists>'] += 1
+                summary['skipped_group_add <already exists>'] += 1
+
+                existing_group = ldap.get_posix_group(conn, name)
+                existing_members = set(existing_group.get('memberUid', []))
+                target_members = set(members.split(','))
+                changes_needed = len(
+                    target_members.symmetric_difference(existing_members)
+                ) > 0
+                if changes_needed:
+                    logger.info(
+                        f"updating members of group {name}({existing_group['gidNumber']})"
+                    )
+                    response = ldap.set_posix_group_members(
+                        conn, name, list(target_members),
+                    )
+                    print('target_members', target_members)
+                    print('existing_members', existing_members)
+                    try:
+                        ldap.validate_response_is_success(response)
+                    except ldap.LDAPCRUDError:
+                        logger.error(f'failed to modify group {name}')
+                        logger.error(f'{response}')
+                        summary['group_errors'] += 1
+
+                        should_continue = input("press y to continue importing: ")
+                        if should_continue.lower().strip() == 'y':
+                            logger.debug("continuing...")
+                            continue
+                        else:
+                            logger.debug("exiting...")
+                            break
+                    else:
+                        logger.info(f'{name}({gid}) has been added')
+                        summary['group_modified'] += 1
+                else:
+                    logger.debug("no membership changes needed")
+
                 continue
 
             # create group if it doesn't exist
