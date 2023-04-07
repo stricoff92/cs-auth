@@ -136,8 +136,6 @@ def main(
                     response = ldap.set_posix_group_members(
                         conn, name, list(target_members),
                     )
-                    print('target_members', target_members)
-                    print('existing_members', existing_members)
                     try:
                         ldap.validate_response_is_success(response)
                     except ldap.LDAPCRUDError:
@@ -156,6 +154,7 @@ def main(
                         logger.info(f'{name}({gid}) has been added')
                         summary['group_modified'] += 1
                 else:
+                    summary['skipped_group_modify <already up to date>'] += 1
                     logger.debug("no membership changes needed")
 
                 continue
@@ -167,7 +166,6 @@ def main(
                 int(gid),
                 _deduplicate_list(members.split(',')),
             )
-            print("entry", entry)
             response = ldap.add_posix_group(
                 conn,
                 name,
