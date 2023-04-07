@@ -44,3 +44,26 @@ ldappackagedir=/home/jon/hunter-repos/cs-auth/env/lib/python3.10/site-packages/l
 ./test
 ```
 
+<hr>
+
+## Usage
+
+```bash
+# encode text to base64
+./main base_64_encode myawesomepassword
+
+# Create interchange formatted data.
+# Data is exported to the csauth/outputs directory
+sudo ./main unix_to_tsv /etc/passwd /etc/shadow /etc/group
+
+# import interchange formatted users & groups
+./main load_tsv /path/to/posixUsers.tsv /path/to/posixGroups.tsv
+
+# import interchange formatted users & groups
+# use a single password for newly added users.
+./main load_tsv /path/to/posixUsers.tsv /path/to/posixGroups.tsv --password myawesomepassword
+
+# only import groups (/foo is a garbage input that is ignored but required)
+./main load_tsv /foo /path/to/posixGroups.tsv --skipusers
+
+```
