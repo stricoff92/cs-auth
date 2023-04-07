@@ -1,7 +1,10 @@
 
-from logging import Logger
+import argparse
 import sys
 
+from common.constants import (
+    SKIP_FLAG
+)
 from common.script_logger import (
     get_debug_console_logger,
     get_task_logger
@@ -10,16 +13,6 @@ from common import security_helpers
 from scripts.patch_python_env import main as patch_python_env
 from scripts.unix_to_tsv import main as unix_to_tsv
 from scripts.load_tsv import main as load_tsv
-
-
-def bad_args_exit(console: Logger):
-    console.error("Bad arguments")
-    console.info("option: patch_python_env")
-    console.info("option: unix_to_tsv <passwd_file> <shadow_file> <group_file>")
-    console.info("option: load_tsv <posix_user_file> <posix_group_file>")
-    console.info("option: add_users <bulk_import_tsv>")
-    bad_args_exit_code = 128
-    sys.exit(bad_args_exit_code)
 
 
 # Available commands that this CLI app can execute
@@ -41,65 +34,95 @@ class COMMANDS:
     # create new account notices.
     add_users = 'add_users'
 
+def new_base_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="CS-AUTH OpenLDAP Management Command Suite",
+        description="Run Management Commands to Interact with OpenLDAP.",
+    )
+    parser.add_argument(
+        'command_name', help="Management Command to Execute.")
+    return parser
+
 
 # Application entry point
 if __name__ == '__main__':
     console = get_debug_console_logger()
 
-    args = sys.argv[1:]
-    console.debug(f'csauth args: {args}')
-
-    try:
-        command = args[0]
-    except IndexError:
-        bad_args_exit(console)
+    console.debug("parsing args...")
+    base_parser = new_base_arg_parser()
+    base_args, _unknown_args = base_parser.parse_known_args()
+    console.debug(f'base args {base_args}')
 
     # Test & Development scripts
-    if command == COMMANDS.base_64_encode:
-        try:
-            value_to_encode = args[1]
-        except IndexError:
-            raise ValueError(
-                "argument[1] is requried (value to encode)"
-            )
-        print(security_helpers.b64encode(value_to_encode))
+    # TODO: Delete these commands.
+    if base_args.command_name == COMMANDS.base_64_encode:
+        parser = new_base_arg_parser()
+        parser.add_argument('value_to_encode', help="The value to BASE64 encode")
+        cmd_args = parser.parse_args()
+        console.debug(f'cmd args {cmd_args}')
 
-    elif command == COMMANDS.patch_python_env:
+        print(security_helpers.b64encode(cmd_args.value_to_encode))
+
+    elif base_args.command_name == COMMANDS.patch_python_env:
         patch_python_env(console)
 
-    elif command == COMMANDS.unix_to_tsv:
-        try:
-            passwd_file_name = args[1]
-            shadow_file_name = args[2]
-            group_file_name = args[3]
-        except IndexError:
-            raise ValueError(
-                "argument[1], argument[2], argument[3] are requried (passwd, shadow, group file paths)"
-            )
+    elif base_args.command_name == COMMANDS.unix_to_tsv:
+        parser = new_base_arg_parser()
+        parser.add_argument('passwd_file', help="The unix passwd file to import")
+        parser.add_argument('shadow_file', help="The unix shadow file to import")
+        parser.add_argument('group_file', help="The unix group file to import")
+        cmd_args = parser.parse_args()
+        console.debug(f'cmd args {cmd_args}')
+
         unix_to_tsv(
             console,
-            passwd_file_name,
-            shadow_file_name,
-            group_file_name,
+            cmd_args.passwd_file,
+            cmd_args.shadow_file,
+            cmd_args.group_file,
         )
 
-    elif command == COMMANDS.load_tsv:
+    elif base_args.command_name == COMMANDS.load_tsv:
         security_helpers.validate_applocals_file()
-        try:
-            posix_user_tsv_path = args[1]
-            posix_group_tsv_path = args[2]
-        except IndexError:
-            raise ValueError(
-                "argument[1], argument[2] are requried (posix_user_tsv_path, posix_group_tsv_path)"
-            )
+        parser = new_base_arg_parser()
+        parser.add_argument('user_file', help="The user tsv file to import")
+        parser.add_argument('group_file', help="The group tsv file to import")
+        parser.add_argument(
+            '--password',
+            help="use a given user password instead of the imported passwords"
+        )
+        parser.add_argument(
+            '--skipusers', action='store_true', help='Don\'t import users', default=False)
+        parser.add_argument(
+            '--skipgroups', action='store_true', help='Don\'t import groups', default=False)
+        cmd_args = parser.parse_args()
+
+        # Don't write password in log files
+        if not cmd_args.password:
+            console.debug(f'cmd args {cmd_args}')
+        else:
+            console.debug(f'cmd_arg.user_file {cmd_args.user_file}')
+            console.debug(f'cmd_arg.group_file {cmd_args.group_file}')
+            console.debug(f'cmd_arg.skipusers {cmd_args.skipusers}')
+            console.debug(f'cmd_arg.skipgroups {cmd_args.skipgroups}')
+            console.debug(f'cmd_arg.password {"*" * len(cmd_args.password)}')
+
         logger = get_task_logger('load-tsv')
-        load_tsv(logger, posix_user_tsv_path, posix_group_tsv_path)
+        load_tsv(
+            logger,
+            SKIP_FLAG if cmd_args.skipusers else cmd_args.user_file,
+            SKIP_FLAG if cmd_args.skipgroups else cmd_args.group_file,
+            given_password=cmd_args.password,
+        )
 
     # Day to day management scripts
-    elif command == COMMANDS.add_users:
+    elif base_args.command_name == COMMANDS.add_users:
         security_helpers.validate_applocals_file()
+        parser = new_base_arg_parser()
+        parser.parse_args()
         logger = get_task_logger('add-users')
 
     else:
-        console.error(f"Bad argument 0: {command}")
-        bad_args_exit(console)
+        console.error(f"Unknown command name: {base_args.command_name}")
+        console.error("run ./main -h for help.")
+        exit_code = 128
+        sys.exit(exit_code)

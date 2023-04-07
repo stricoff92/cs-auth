@@ -2,7 +2,22 @@
 
 ## Installation
 
-README assumes you're using python 3.10. This readme should get updated in the future. Unfortunatly the python ldap client doesn't work out of the box with python3.10 until the library is patched. This may change with future updates. The patching that's required may also change in the future.
+README assumes you're using python 3.10. This readme should get updated in the future. The python ldap client doesn't work out of the box with python3.10 until the library is patched. This may change with future updates. The patching that's required may also change in the future.
+
+
+```bash
+# create applocals file
+touch csauth/applocals.py
+chmod 600 csauth/applocals.py
+```
+
+Example `applocals.py` file
+```
+LDAP_SERVER_HOST = 'cs-auth'
+LDAP_SERVER_DOMAIN_COMPONENTS = 'dc=cs,dc=hunter,dc=cuny,dc=edu'
+LDAP_ADMIN_DN = f'cn=admin,{LDAP_SERVER_DOMAIN_COMPONENTS}'
+LDAP_ADMIN_PASSWORD_BASE64 = 'BASE_64_ENCODED_PW_GOES_HERE'
+```
 
 
 ```bash
@@ -29,3 +44,26 @@ ldappackagedir=/home/jon/hunter-repos/cs-auth/env/lib/python3.10/site-packages/l
 ./test
 ```
 
+<hr>
+
+## Usage
+
+```bash
+# encode text to base64
+./main base_64_encode myawesomepassword
+
+# Create interchange formatted data.
+# Data is exported to the csauth/outputs directory
+sudo ./main unix_to_tsv /etc/passwd /etc/shadow /etc/group
+
+# import interchange formatted users & groups
+./main load_tsv /path/to/posixUsers.tsv /path/to/posixGroups.tsv
+
+# import interchange formatted users & groups
+# use a single password for newly added users.
+./main load_tsv /path/to/posixUsers.tsv /path/to/posixGroups.tsv --password myawesomepassword
+
+# only import groups (/foo is a garbage input that is ignored but required)
+./main load_tsv /foo /path/to/posixGroups.tsv --skipusers
+
+```
