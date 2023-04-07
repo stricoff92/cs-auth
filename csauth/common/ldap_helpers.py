@@ -5,7 +5,11 @@
         > Perform basic CRUD operations against the LDAP server.
 """
 
-from typing import Optional, Dict
+from typing import (
+    Optional,
+    Dict,
+    List,
+)
 
 from ldap3 import (
     Server as LDAPServer,
@@ -226,7 +230,6 @@ def add_posix_group(
 
 
 # LDAP entry attribute factories # # #
-
 def create_posix_user_entry_dict(
         username: str,
         uidNumber: str,
@@ -249,3 +252,16 @@ def create_posix_user_entry_dict(
         'shadowMax': 99999,
         'shadowWarning': 720,
     }
+
+def create_posix_group_entry_dict(
+    name: str,
+    gidNumber: int,
+    members: List[str],
+) -> Dict:
+    entry = {
+        'cn': name,
+        'gidNumber': gidNumber,
+    }
+    if len(members):
+        entry['memberUid'] = members
+    return entry

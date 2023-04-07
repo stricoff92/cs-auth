@@ -112,7 +112,14 @@ def patch2(console, ldappackagedir) -> Optional[bool]:
 def main(console) -> None:
     # absolute path to package directory,
     # for example: '/home/jon/hunter-repos/cs-auth/env/lib/python3.10/site-packages/ldap3'
-    ldappackagedir = os.environ['ldappackagedir']
+    try:
+        ldappackagedir = os.environ['ldappackagedir']
+    except KeyError as e:
+        console.error("could not find environment variable 'ldappackagedir'")
+        console.error("this variable must be set before running this command.")
+        raise KeyError(
+            'cound not find environment variable "ldappackagedir"'
+        ) from e
 
     if not os.path.isdir(ldappackagedir):
         raise ValueError(f"directory does not exist: {ldappackagedir}")

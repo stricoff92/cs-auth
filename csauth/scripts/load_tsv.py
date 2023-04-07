@@ -7,9 +7,18 @@
 from collections import Counter
 import csv
 from logging import Logger
+from typing import List
 
+from common.constants import (
+    SKIP_FLAG
+)
 from common import ldap_helpers as ldap
 from common import security_helpers
+
+
+def _deduplicate_list(l: List[str]) -> List[str]:
+    return list(set(l))
+
 
 def main(
         logger: Logger,
@@ -18,22 +27,33 @@ def main(
         given_password: str = None,
 ) -> None:
     logger.debug("load_tsv::main()")
-
     summary = Counter()
+
 
     # Read interchange formatted data from .tsv files into memory
     logger.debug('reading ' + posix_user_tsv_path)
-    with open(posix_user_tsv_path) as f:
-        user_tsv_rows = list(csv.reader(f, delimiter='\t'))
-    logger.debug('reading ' + posix_group_tsv_path)
-    with open(posix_group_tsv_path) as f:
-        group_tsv_rows = list(csv.reader(f, delimiter='\t'))
+    if posix_user_tsv_path != SKIP_FLAG:
+        with open(posix_user_tsv_path) as f:
+            user_tsv_rows = list(csv.reader(f, delimiter='\t'))
+    else:
+        user_tsv_rows = []
     logger.info(f"found {len(user_tsv_rows)} user rows to import")
+
+
+    logger.debug('reading ' + posix_group_tsv_path)
+    if posix_group_tsv_path != SKIP_FLAG:
+        with open(posix_group_tsv_path) as f:
+            group_tsv_rows = list(csv.reader(f, delimiter='\t'))
+    else:
+        group_tsv_rows = []
     logger.info(f"found {len(group_tsv_rows)} group rows to import")
+
 
     with ldap.new_connection() as conn:
         logger.debug("connected to ldap server @" + conn.server.host)
 
+        if len(user_tsv_rows):
+            logger.debug("adding users")
         for user in user_tsv_rows:
             (
                 username,
@@ -47,9 +67,9 @@ def main(
 
             if ldap.posix_user_exists(conn, username):
                 logger.info(
-                    f"not adding {username}({uidNumber}) cn already exists"
+                    f"not adding user {username}({uidNumber}) cn already exists"
                 )
-                summary['skipped <already exists>'] += 1
+                summary['skipped_user <already exists>'] += 1
                 continue
 
             userPassword = (
@@ -72,9 +92,9 @@ def main(
             except ldap.LDAPCRUDError:
                 logger.error(f'failed to add user {username}')
                 logger.error(f'{response}')
-                summary['errors'] += 1
+                summary['user_errors'] += 1
 
-                should_continue = input("press y to continue")
+                should_continue = input("press y to continue importing: ")
                 if should_continue.lower().strip() == 'y':
                     logger.debug("continuing...")
                     continue
@@ -83,8 +103,56 @@ def main(
                     break
             else:
                 logger.info(f'{username}({uidNumber}) has been added')
-                summary['users added'] += 1
+                summary['users_added'] += 1
 
+
+        if len(group_tsv_rows):
+            logger.debug("adding groups")
+        for group in group_tsv_rows:
+            (
+                name,
+                gid,
+                members,
+            ) = group
+
+
+            if ldap.posix_group_exists(conn, name):
+                logger.info(
+                    f"not adding group {name}({gid}) cn already exists"
+                )
+                summary['skipped_group <already exists>'] += 1
+                continue
+
+            # create group if it doesn't exist
+            logger.info(f"adding group {name}({gid}) with members {members}")
+            entry = ldap.create_posix_group_entry_dict(
+                name,
+                int(gid),
+                _deduplicate_list(members.split(',')),
+            )
+            print("entry", entry)
+            response = ldap.add_posix_group(
+                conn,
+                name,
+                entry,
+            )
+            try:
+                ldap.validate_response_is_success(response)
+            except ldap.LDAPCRUDError:
+                logger.error(f'failed to add group {name}')
+                logger.error(f'{response}')
+                summary['group_errors'] += 1
+
+                should_continue = input("press y to continue importing: ")
+                if should_continue.lower().strip() == 'y':
+                    logger.debug("continuing...")
+                    continue
+                else:
+                    logger.debug("exiting...")
+                    break
+            else:
+                logger.info(f'{name}({gid}) has been added')
+                summary['groups_added'] += 1
 
     logger.info('\n* * * * Summary * * * *\n' + '\n'.join(f'{k}:  {summary[k]}' for k in summary))
     logger.debug("bye")
