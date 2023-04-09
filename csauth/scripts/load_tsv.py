@@ -70,8 +70,40 @@ def main(
                     f"not adding user {username}({uidNumber}) cn already exists"
                 )
                 summary['skipped_user_add <already exists>'] += 1
+
+                # sync password
+                existing_user = ldap.get_posix_user(conn, username)
+                if given_password or (existing_user['userPassword'] != hashedPw.encode('utf-8')):
+                    response = ldap.sync_user_password(
+                        conn,
+                        username,
+                        (
+                            security_helpers.hash_password(given_password)
+                            if given_password
+                            else hashedPw
+                        ).encode('utf-8'),
+                    )
+                    try:
+                        ldap.validate_response_is_success(response)
+                    except ldap.LDAPCRUDError:
+                        logger.error(f'failed to edit user password for {username}({existing_user["uidNumber"]})')
+                        logger.error(f'{response}')
+                        summary['user_password_update_errors'] += 1
+
+                        should_continue = input("press y to continue importing: ")
+                        if should_continue.lower().strip() == 'y':
+                            logger.debug("continuing...")
+                            continue
+                        else:
+                            logger.debug("exiting...")
+                            break
+                    else:
+                        logger.info(f'{username}({uidNumber}) password has been updated')
+                        summary['users_password_updated'] += 1
+
                 continue
 
+            # Username does not exist: add user.
             userPassword = (
                 security_helpers.hash_password(given_password)
                 if given_password

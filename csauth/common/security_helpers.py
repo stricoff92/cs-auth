@@ -11,6 +11,9 @@ import stat
 from settings import BASE_DIR
 
 
+SR = random.SystemRandom()
+
+
 def b64encode(val: str) -> str:
     return base64.b64encode(val.encode()).decode()
 
@@ -20,11 +23,11 @@ def b64decode(val: str) -> str:
 
 def new_plaintext_password() -> str:
     chars = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-    return ''.join(random.SystemRandom().choice(chars) for _ in range(10))
+    return ''.join(SR.choice(chars) for _ in range(10))
 
 def hash_password(plaintext_password: str) -> str:
     prefix = ''.join(chr(v) for v in  [123, 99, 114, 121, 112, 116, 125]) # '{crypt}'
-    salt = crypt.mksalt(crypt.METHOD_SHA512, rounds=300000)
+    salt = crypt.mksalt(crypt.METHOD_SHA512, rounds=100000)
     return prefix + crypt.crypt(plaintext_password, salt)
 
 class ApplocalsError(Exception):

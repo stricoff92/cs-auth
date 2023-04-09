@@ -250,6 +250,19 @@ def set_posix_group_members(
     return conn.result
 
 
+def sync_user_password(
+    conn: LDAPConnection,
+    cn: str,
+    userPassword: bytes
+):
+    dn = _get_posix_user_dn(cn)
+    changes = {
+        'userPassword': [(MODIFY_REPLACE, [userPassword],)],
+    }
+    conn.modify(dn, changes)
+    return conn.result
+
+
 # LDAP entry attribute factories # # #
 def create_posix_user_entry_dict(
         username: str,
