@@ -103,6 +103,7 @@ def main(
 
                 continue
 
+            # Username does not exist: add user.
             userPassword = (
                 security_helpers.hash_password(given_password)
                 if given_password

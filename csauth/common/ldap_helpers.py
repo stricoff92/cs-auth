@@ -253,11 +253,11 @@ def set_posix_group_members(
 def sync_user_password(
     conn: LDAPConnection,
     cn: str,
-    shadowEntry: bytes
+    userPassword: bytes
 ):
     dn = _get_posix_user_dn(cn)
     changes = {
-        'userPassword': [(MODIFY_REPLACE, [shadowEntry],)],
+        'userPassword': [(MODIFY_REPLACE, [userPassword],)],
     }
     conn.modify(dn, changes)
     return conn.result
