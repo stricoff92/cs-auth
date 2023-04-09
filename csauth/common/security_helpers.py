@@ -27,7 +27,7 @@ def new_plaintext_password() -> str:
 
 def hash_password(plaintext_password: str) -> str:
     prefix = ''.join(chr(v) for v in  [123, 99, 114, 121, 112, 116, 125]) # '{crypt}'
-    salt = crypt.mksalt(crypt.METHOD_SHA512, rounds=300000)
+    salt = crypt.mksalt(crypt.METHOD_SHA512, rounds=100000)
     return prefix + crypt.crypt(plaintext_password, salt)
 
 class ApplocalsError(Exception):
