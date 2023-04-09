@@ -46,7 +46,7 @@ ldappackagedir=/home/jon/hunter-repos/cs-auth/env/lib/python3.10/site-packages/l
 
 <hr>
 
-## Usage
+## Script Usage
 
 ```bash
 # encode text to base64
@@ -66,4 +66,24 @@ sudo ./main unix_to_tsv /etc/passwd /etc/shadow /etc/group
 # only import groups (/foo is a garbage input that is ignored but required)
 ./main load_tsv /foo /path/to/posixGroups.tsv --skipusers
 
+```
+
+## Using `ldapmodify` to configure slapd
+```bash
+# show global config
+ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config -LLL
+
+# Disable anonymous bind requests
+ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
+```
+
+
+## `ldapsearch` example usage
+```bash
+# Search using SASL auth as root
+ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
+
+# test search using anonymous simple auth
+# (this should fail)
+ldapsearch -b 'dc=cs,dc=hunter,dc=cuny,dc=edu' -H ldap://localhost -x
 ```

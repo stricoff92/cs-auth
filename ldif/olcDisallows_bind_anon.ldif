@@ -1,0 +1,3 @@
+dn: cn=config
+add: olcDisallows
+olcDisallows: bind_anon
