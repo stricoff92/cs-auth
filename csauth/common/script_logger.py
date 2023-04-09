@@ -26,7 +26,7 @@ def _get_report_formatter() -> logging.Formatter:
         '%(levelname)s %(message)s'
     )
 
-def get_debug_console_logger(logger_name: str = None) -> logging.Logger:
+def get_console_logger(logger_name: str = None) -> logging.Logger:
     logger = logging.getLogger(logger_name if logger_name else __name__)
     logger.setLevel(logging.DEBUG)
     handler = NullHandler() if settings.IS_TEST else StreamHandler()

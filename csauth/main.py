@@ -6,7 +6,7 @@ from common.constants import (
     SKIP_FLAG
 )
 from common.script_logger import (
-    get_debug_console_logger,
+    get_console_logger,
     get_task_logger
 )
 from common import security_helpers
@@ -46,7 +46,7 @@ def new_base_arg_parser() -> argparse.ArgumentParser:
 
 # Application entry point
 if __name__ == '__main__':
-    console = get_debug_console_logger()
+    console = get_console_logger()
 
     console.debug("parsing args...")
     base_parser = new_base_arg_parser()
