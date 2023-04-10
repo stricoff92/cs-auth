@@ -44,6 +44,15 @@ ldappackagedir=/home/jon/hunter-repos/cs-auth/env/lib/python3.10/site-packages/l
 ./test
 ```
 
+```bash
+# New TLS Certificate
+sudo -i
+cd ~
+mkdir certs; cd certs;
+openssl req -new -newkey rsa:4096 -x509 -sha256 -days 9999 -nodes -out OpenLDAPServer.crt -keyout OpenLDAPServer.key
+```
+
+
 <hr>
 
 ## Script Usage
@@ -71,17 +80,17 @@ sudo ./main unix_to_tsv /etc/passwd /etc/shadow /etc/group
 ## Using `ldapmodify` to configure slapd
 ```bash
 # show global config
-ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config -LLL
+sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config -LLL
 
 # Disable anonymous bind requests
-ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
+sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
 ```
 
 
 ## `ldapsearch` example usage
 ```bash
 # Search using SASL auth as root
-ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
+sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
 
 # test search using anonymous simple auth
 # (this should fail)
