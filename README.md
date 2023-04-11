@@ -1,6 +1,14 @@
 # cs-auth
 
-## Installation
+## slapd installation
+```bash
+sudo apt install slapd ldap-utils
+sudo dpkg-reconfigure slapd
+```
+
+<hr>
+
+## Python Management Suite Installation
 
 README assumes you're using python 3.10. This readme should get updated in the future. The python ldap client doesn't work out of the box with python3.10 until the library is patched. This may change with future updates. The patching that's required may also change in the future.
 
@@ -43,13 +51,50 @@ ldappackagedir=/home/jon/hunter-repos/cs-auth/env/lib/python3.10/site-packages/l
 
 ./test
 ```
+<hr>
+
+## Preprare for TLS
 
 ```bash
-# New TLS Certificate
-sudo -i
-cd ~
-mkdir certs; cd certs;
-openssl req -new -newkey rsa:4096 -x509 -sha256 -days 9999 -nodes -out OpenLDAPServer.crt -keyout OpenLDAPServer.key
+# setup directories
+sudo -i;
+mkdir /root/slapd/
+mkdir /root/slapd/CA;
+mkdir /root/slapd/CA/private;
+
+# These instructions assume openssl will dump new certs to ./demoCA.
+# You can confirm this by running:
+openssl version -d
+# then check the OPENSSLDIR/openssl.cnf file
+cat OPENSSLDIR/openssl.cnf | grep dir
+# dir		= ./demoCA		# Where everything is kept
+# dir		= ./demoCA		# TSA root directory
+
+mkdir /root/slapd/CA/demoCA
+mkdir /root/slapd/CA/demoCA/newcerts/
+touch /root/slapd/CA/demoCA/index.txt
+echo 01 > /root/slapd/CA/demoCA/serial
+
+```
+
+```bash
+# Create CA Certificate and key
+cd /root/slapd/CA
+# Create ca key
+openssl genrsa -out ca.key 4096
+# Create ca cert signed with ca key
+openssl req -new -x509 -days 9999 -key ca.key -out ca.cert.pem
+
+# Create Server TLS Certificate and key
+# Replace MACHINE with server hostname.
+# create private key
+openssl genrsa -out private/MACHINE.key 4096
+
+# create certificate signing request
+openssl req -new -key private/MACHINE.key -out MACHINE.csr
+
+# Create LDAP server certificate
+openssl ca -days 9999 -keyfile ca.key -cert ca.cert.pem -in MACHINE.csr -out private/MACHINE.crt
 ```
 
 
@@ -70,7 +115,7 @@ sudo ./main unix_to_tsv /etc/passwd /etc/shadow /etc/group
 
 # import interchange formatted users & groups
 # use a single password for newly added users.
-./main load_tsv /path/to/posixUsers.tsv /path/to/posixGroups.tsv --password myawesomepassword
+./main load_tsv /path/to/posixUsers.tsv /path/to/posixGroups.tsv --password
 
 # only import groups (/foo is a garbage input that is ignored but required)
 ./main load_tsv /foo /path/to/posixGroups.tsv --skipusers
