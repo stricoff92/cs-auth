@@ -84,11 +84,8 @@ cd /root/slapd/CA
 openssl genrsa -out ca.key 4096
 # Create ca cert signed with ca key
 openssl req -new -x509 -days 9999 -key ca.key -out ca.cert.pem
-```
 
-```bash
 # Create Server TLS Certificate and key
-
 # Replace MACHINE with server hostname.
 # create private key
 openssl genrsa -out private/MACHINE.key 4096
@@ -118,7 +115,7 @@ sudo ./main unix_to_tsv /etc/passwd /etc/shadow /etc/group
 
 # import interchange formatted users & groups
 # use a single password for newly added users.
-./main load_tsv /path/to/posixUsers.tsv /path/to/posixGroups.tsv --password myawesomepassword
+./main load_tsv /path/to/posixUsers.tsv /path/to/posixGroups.tsv --password
 
 # only import groups (/foo is a garbage input that is ignored but required)
 ./main load_tsv /foo /path/to/posixGroups.tsv --skipusers

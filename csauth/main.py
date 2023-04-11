@@ -1,5 +1,6 @@
 
 import argparse
+import getpass
 import sys
 
 from common.constants import (
@@ -87,31 +88,31 @@ if __name__ == '__main__':
         parser.add_argument('user_file', help="The user tsv file to import")
         parser.add_argument('group_file', help="The group tsv file to import")
         parser.add_argument(
-            '--password',
-            help="use a given user password instead of the imported passwords"
+            '--password', '-p',
+            help="use a given user password instead of the imported passwords",
+            action='store_true',
+            default=False
         )
         parser.add_argument(
             '--skipusers', action='store_true', help='Don\'t import users', default=False)
         parser.add_argument(
             '--skipgroups', action='store_true', help='Don\'t import groups', default=False)
         cmd_args = parser.parse_args()
+        console.debug(f'cmd args {cmd_args}')
 
-        # Don't write password in log files
-        if not cmd_args.password:
-            console.debug(f'cmd args {cmd_args}')
+        if cmd_args.password:
+            console.debug("ignoring imported password, will use a new password for user(s)")
+            given_password = getpass.getpass("new password for user(s): ")
         else:
-            console.debug(f'cmd_arg.user_file {cmd_args.user_file}')
-            console.debug(f'cmd_arg.group_file {cmd_args.group_file}')
-            console.debug(f'cmd_arg.skipusers {cmd_args.skipusers}')
-            console.debug(f'cmd_arg.skipgroups {cmd_args.skipgroups}')
-            console.debug(f'cmd_arg.password {"*" * len(cmd_args.password)}')
+            console.debug("using imported password(s)")
+            given_password = None
 
         logger = get_task_logger('load-tsv')
         load_tsv(
             logger,
             SKIP_FLAG if cmd_args.skipusers else cmd_args.user_file,
             SKIP_FLAG if cmd_args.skipgroups else cmd_args.group_file,
-            given_password=cmd_args.password,
+            given_password=given_password,
         )
 
     # Day to day management scripts
