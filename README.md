@@ -62,6 +62,8 @@ sudo -i;
 mkdir /root/slapd/
 mkdir /root/slapd/CA;
 mkdir /root/slapd/CA/private;
+mkdir /etc/ldap/certs
+mkdir /etc/ldap/cacerts
 
 # These instructions assume openssl will dump new certs to ./demoCA.
 # You can confirm this by running:
@@ -96,8 +98,14 @@ openssl req -new -key private/MACHINE.key -out MACHINE.csr
 
 # Create LDAP server certificate
 openssl ca -days 9999 -keyfile ca.key -cert ca.cert.pem -in MACHINE.csr -out private/MACHINE.crt
-```
 
+# Move files to openldap directory
+cp private/MACHINE.crt /etc/ldap/certs/
+cp private/MACHINE.key /etc/ldap/certs/
+cp ca.cert.pem /etc/ldap/certs/
+chown -R openldap:openldap /etc/ldap/certs/
+chown -R openldap:openldap /etc/ldap/cacerts/
+```
 
 <hr>
 
@@ -125,7 +133,10 @@ sudo ./main unix_to_tsv /etc/passwd /etc/shadow /etc/group
 
 ## Using `ldapmodify` to configure slapd
 ```bash
-# show global config
+# show config
+sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config cn=config
+
+# or
 sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config -LLL
 
 # Disable anonymous bind requests

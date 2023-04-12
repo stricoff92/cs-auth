@@ -1,0 +1,3 @@
+dn: cn=config
+add: olcTLSCACertificateFile
+olcTLSCACertificateFile: /etc/ldap/cacerts/ca.cert.pem
