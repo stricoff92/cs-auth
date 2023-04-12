@@ -56,55 +56,85 @@ ldappackagedir=/home/jon/hunter-repos/cs-auth/env/lib/python3.10/site-packages/l
 
 ## Preprare for TLS
 
+You should refer to distro specific documentation. The below is from https://ubuntu.com/server/docs/service-ldap-with-tls (ubuntu 22)
+
 ```bash
-# setup directories
-sudo -i;
-mkdir /root/slapd/
-mkdir /root/slapd/CA;
-mkdir /root/slapd/CA/private;
-mkdir /etc/ldap/certs
-mkdir /etc/ldap/cacerts
+sudo -i
 
-# These instructions assume openssl will dump new certs to ./demoCA.
-# You can confirm this by running:
-openssl version -d
-# then check the OPENSSLDIR/openssl.cnf file
-cat OPENSSLDIR/openssl.cnf | grep dir
-# dir		= ./demoCA		# Where everything is kept
-# dir		= ./demoCA		# TSA root directory
+apt install gnutls-bin ssl-cert
 
-mkdir /root/slapd/CA/demoCA
-mkdir /root/slapd/CA/demoCA/newcerts/
-touch /root/slapd/CA/demoCA/index.txt
-echo 01 > /root/slapd/CA/demoCA/serial
+# Create CA Certificate and key
+sudo certtool --generate-privkey --bits 4096 --outfile /etc/ssl/private/slapd-cakey.pem
+```
+
+Create /etc/ssl/ca.info
+```
+cn = Hunter College
+ca
+cert_signing_key
+expiration_days = 9999
+```
+
+Create self signed CA certificate
+```bash
+certtool --generate-self-signed \
+--load-privkey /etc/ssl/private/slapd-cakey.pem \
+--template /etc/ssl/ca.info \
+--outfile /usr/local/share/ca-certificates/slapdca.crt
+
+# collect the new CA cert
+# this command creates symlink: (/etc/ssl/certs/slapdca.pem)
+update-ca-certificates
+```
+
+Create /etc/ssl/MACHINE.info
+```
+organization = Hunter College
+cn = MACHINE_FQDN_GOES_HERE
+tls_www_server
+encryption_key
+signing_key
+expiration_days = 9999
 
 ```
 
+Create TLS key and certificate
 ```bash
-# Create CA Certificate and key
-cd /root/slapd/CA
-# Create ca key
-openssl genrsa -out ca.key 4096
-# Create ca cert signed with ca key
-openssl req -new -x509 -days 9999 -key ca.key -out ca.cert.pem
-
-# Create Server TLS Certificate and key
-# Replace MACHINE with server hostname.
 # create private key
-openssl genrsa -out private/MACHINE.key 4096
+certtool --generate-privkey \
+--bits 2048 \
+--outfile /etc/ldap/MACHINE_slapd_key.pem
 
-# create certificate signing request
-openssl req -new -key private/MACHINE.key -out MACHINE.csr
+# create certificate
+sudo certtool --generate-certificate \
+--load-privkey /etc/ldap/MACHINE_slapd_key.pem \
+--load-ca-certificate /etc/ssl/certs/slapdca.pem \
+--load-ca-privkey /etc/ssl/private/slapd-cakey.pem \
+--template /etc/ssl/MACHINE.info \
+--outfile /etc/ldap/MACHINE_slapd_cert.pem
 
-# Create LDAP server certificate
-openssl ca -days 9999 -keyfile ca.key -cert ca.cert.pem -in MACHINE.csr -out private/MACHINE.crt
+# Adjust permissions
+sudo chgrp openldap /etc/ldap/MACHINE_slapd_key.pem
+sudo chmod 0640 /etc/ldap/MACHINE_slapd_key.pem
+```
 
-# Move files to openldap directory
-cp private/MACHINE.crt /etc/ldap/certs/
-cp private/MACHINE.key /etc/ldap/certs/
-cp ca.cert.pem /etc/ldap/certs/
-chown -R openldap:openldap /etc/ldap/certs/
-chown -R openldap:openldap /etc/ldap/cacerts/
+```bash
+# Apply slapd configuration changes
+
+# copy ldif templates to a gitignored directory
+cp ldif_templates/*.ldif ldif/
+
+# replace MACHINE in ldif/ files then run
+ldapmodify -Y EXTERNAL -H ldapi:// -f ldif/set_tls_config.ldif
+```
+
+Update slapd args in `/etc/default/slapd`. add `ldaps:///` to SLAPD_SERVICES, and then restart slapd with `systemctl restart slapd`
+
+```bash
+# optional: setup local port forwarding through jump box
+ssh -L 1636:LDAPHOST:636 user@jumpbox.host
+
+# now you connect to ldaps://localhost:1636
 ```
 
 <hr>
@@ -144,13 +174,6 @@ sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config -LLL
 # Disable anonymous bind requests
 sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
 
-# edit MACHINE value in ldif/olcTLSCACertificateFile_add.ldif
-# then add CA Certificate to config
-sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcTLSCACertificateFile_add.ldif
-
-# edit MACHINE value in ldif/olcTLSCertificateFile_add.ldif
-# then add TLS Certificate & Key to config
-sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcTLSCertificateFile_add.ldif
 ```
 
 
