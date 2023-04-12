@@ -52,6 +52,17 @@ ldappackagedir=/home/jon/hunter-repos/cs-auth/env/lib/python3.10/site-packages/l
 
 ./test
 ```
+
+```bash
+# copy ldif templates to a gitignored directory
+cp ldif_templates/*.ldif ldif/
+```
+
+```bash
+# show the config
+sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config cn=config
+```
+
 <hr>
 
 ## Preprare for TLS
@@ -121,8 +132,7 @@ sudo chmod 0640 /etc/ldap/MACHINE_slapd_key.pem
 ```bash
 # Apply slapd configuration changes
 
-# copy ldif templates to a gitignored directory
-cp ldif_templates/*.ldif ldif/
+
 
 # replace MACHINE in ldif/ files then run
 ldapmodify -Y EXTERNAL -H ldapi:// -f ldif/set_tls_config.ldif
@@ -138,6 +148,15 @@ ssh -L 1636:LDAPHOST:636 user@jumpbox.host
 ```
 
 <hr>
+
+## Apply Security Configuration Settings
+
+```bash
+
+# Disable anonymous bind requests
+sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
+
+```
 
 ## Script Usage
 
