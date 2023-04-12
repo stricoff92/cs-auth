@@ -133,14 +133,24 @@ sudo ./main unix_to_tsv /etc/passwd /etc/shadow /etc/group
 
 ## Using `ldapmodify` to configure slapd
 ```bash
+# move template ldif files to gitignored directory for editing.
+cp ldif_templates/*.ldif ldif/
+
 # show config
 sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config cn=config
-
 # or
 sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config -LLL
 
 # Disable anonymous bind requests
 sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
+
+# edit MACHINE value in ldif/olcTLSCACertificateFile_add.ldif
+# then add CA Certificate to config
+sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcTLSCACertificateFile_add.ldif
+
+# edit MACHINE value in ldif/olcTLSCertificateFile_add.ldif
+# then add TLS Certificate & Key to config
+sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcTLSCertificateFile_add.ldif
 ```
 
 
