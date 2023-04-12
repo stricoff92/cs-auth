@@ -1,0 +1,3 @@
+dn: cn=config
+add: olcTLSCertificateKeyFile
+olcTLSCertificateKeyFile: /etc/ldap/certs/MACHINE.key
