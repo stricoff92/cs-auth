@@ -78,7 +78,7 @@ apt install gnutls-bin ssl-cert
 sudo certtool --generate-privkey --bits 4096 --outfile /etc/ssl/private/slapd-cakey.pem
 ```
 
-Create /etc/ssl/ca.info
+Create `/etc/ssl/ca.info`
 ```
 cn = Hunter College
 ca
@@ -98,7 +98,7 @@ certtool --generate-self-signed \
 update-ca-certificates
 ```
 
-Create /etc/ssl/MACHINE.info
+Create `/etc/ssl/MACHINE.info`
 ```
 organization = Hunter College
 cn = MACHINE_FQDN_GOES_HERE
@@ -132,13 +132,11 @@ sudo chmod 0640 /etc/ldap/MACHINE_slapd_key.pem
 ```bash
 # Apply slapd configuration changes
 
-
-
-# replace MACHINE in ldif/ files then run
+# replace MACHINE in ldif/set_tls_config.ldif then run
 ldapmodify -Y EXTERNAL -H ldapi:// -f ldif/set_tls_config.ldif
 ```
 
-Update slapd args in `/etc/default/slapd`. add `ldaps:///` to SLAPD_SERVICES, and then restart slapd with `systemctl restart slapd`
+Update slapd args in `/etc/default/slapd`. add `ldaps:///` to `SLAPD_SERVICES`, and then restart slapd with `systemctl restart slapd`
 
 ```bash
 # optional: setup local port forwarding through jump box
@@ -152,6 +150,22 @@ ssh -L 1636:LDAPHOST:636 user@jumpbox.host
 ## Apply Security Configuration Settings
 
 ```bash
+
+# Disable anonymous bind requests
+sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
+
+```
+
+
+## Using `ldapmodify` to configure slapd
+```bash
+# move template ldif files to gitignored directory for editing.
+cp ldif_templates/*.ldif ldif/
+
+# show config
+sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config cn=config
+# or
+sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config -LLL
 
 # Disable anonymous bind requests
 sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
@@ -179,22 +193,6 @@ sudo ./main unix_to_tsv /etc/passwd /etc/shadow /etc/group
 ./main load_tsv /foo /path/to/posixGroups.tsv --skipusers
 
 ```
-
-## Using `ldapmodify` to configure slapd
-```bash
-# move template ldif files to gitignored directory for editing.
-cp ldif_templates/*.ldif ldif/
-
-# show config
-sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config cn=config
-# or
-sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config -LLL
-
-# Disable anonymous bind requests
-sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
-
-```
-
 
 ## `ldapsearch` example usage
 ```bash
