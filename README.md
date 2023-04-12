@@ -147,12 +147,35 @@ ssh -L 1636:LDAPHOST:636 user@jumpbox.host
 
 <hr>
 
-## Apply Security Configuration Settings
+## Apply Security configurations to SLAPD
 
 ```bash
 
 # Disable anonymous bind requests
 sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
+
+```
+
+## Apply Security configurations to Ubuntu
+
+```bash
+sudo -i
+
+# view network firewall settings
+ufw status verbose
+
+# setup network firewall
+ufw enable && ufw allow 22
+sudo ufw default deny incoming
+
+# option 1: add rule to allow ipv4 access to tcp port 636
+ufw allow proto tcp to 0.0.0.0/0 port 636
+
+# option 2: add rule to allow subnet access to tcp port 636
+ufw allow from 146.95.214.0/24 proto tcp to 0.0.0.0/0 port 636
+
+# option 3: add rule to allow network access to tcp port 636
+ufw allow from 146.95.0.0/16 proto tcp to 0.0.0.0/0 port 636
 
 ```
 
