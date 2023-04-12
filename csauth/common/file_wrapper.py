@@ -3,7 +3,7 @@
     temporary files to the disk.
 """
 
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 import datetime as dt
 import os
 import os.path
@@ -13,7 +13,7 @@ import uuid
 from settings import TMP_DIR, OUTPUTS_DIR
 
 
-class BaseFileWrapper:
+class BaseFileWrapper(ABC):
 
     OUT_DIR = NotImplemented
 
