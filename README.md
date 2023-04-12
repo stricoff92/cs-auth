@@ -53,6 +53,12 @@ ldappackagedir=/home/jon/hunter-repos/cs-auth/env/lib/python3.10/site-packages/l
 ./test
 ```
 
+<hr>
+
+## Setup TLS
+
+You should refer to distro specific documentation. The below is from https://ubuntu.com/server/docs/service-ldap-with-tls (ubuntu 22)
+
 ```bash
 # copy ldif templates to a gitignored directory
 cp ldif_templates/*.ldif ldif/
@@ -63,11 +69,6 @@ cp ldif_templates/*.ldif ldif/
 sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config cn=config
 ```
 
-<hr>
-
-## Preprare for TLS
-
-You should refer to distro specific documentation. The below is from https://ubuntu.com/server/docs/service-ldap-with-tls (ubuntu 22)
 
 ```bash
 sudo -i
@@ -166,34 +167,15 @@ ufw status verbose
 
 # setup network firewall
 ufw enable && ufw allow 22
+
+# By default we'll block all incoming traffic
 sudo ufw default deny incoming
 
-# option 1: add rule to allow ipv4 access to tcp port 636
-ufw allow proto tcp to 0.0.0.0/0 port 636
-
-# option 2: add rule to allow subnet access to tcp port 636
+# allow subnet ipv4 traffic access to port 636
 ufw allow from 146.95.214.0/24 proto tcp to 0.0.0.0/0 port 636
-
-# option 3: add rule to allow network access to tcp port 636
-ufw allow from 146.95.0.0/16 proto tcp to 0.0.0.0/0 port 636
-
 ```
 
-
-## Using `ldapmodify` to configure slapd
-```bash
-# move template ldif files to gitignored directory for editing.
-cp ldif_templates/*.ldif ldif/
-
-# show config
-sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config cn=config
-# or
-sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config -LLL
-
-# Disable anonymous bind requests
-sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
-
-```
+<hr>
 
 ## Script Usage
 
