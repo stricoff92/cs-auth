@@ -1,3 +1,0 @@
-dn: cn=config
-add: olcTLSCertificateFile
-olcTLSCertificateFile: /etc/ldap/certs/MACHINE.crt
