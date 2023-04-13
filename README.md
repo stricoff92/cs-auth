@@ -160,9 +160,21 @@ ssh -L 1636:LDAPHOST:636 user@jumpbox.host
 ## Apply Security configurations to SLAPD
 
 ```bash
-
 # Disable anonymous bind requests
 sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
+```
+
+Verify Access Controls
+
+```bash
+# Find database config (for example olcDatabase={1}mdb)
+ldapsearch  -Y EXTERNAL -H ldapi:/// -b cn=config dn
+# View oldAccess config entries for olcDatabase={1}mdb
+ldapsearch  -Y EXTERNAL -H ldapi:/// -b cn=config 'olcDatabase={1}mdb'
+# Default access controls are suitable:
+# olcAccess: {0}to attrs=userPassword by self write by anonymous auth by * none
+# olcAccess: {1}to attrs=shadowLastChange by self write by * read
+# olcAccess: {2}to * by * read
 
 ```
 
@@ -189,7 +201,7 @@ ufw allow from 127.0.0.1 to 127.0.0.1 port 636
 
 ```
 
-## Test Security Settings
+## Test Server Security Settings
 
 ```bash
 # expected results:
@@ -215,6 +227,40 @@ ufw allow from 127.0.0.1 to 127.0.0.1 port 636
 ⌛❌ ldapwhoami -x -H ldap://MACHINE.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W
 ```
 
+<hr>
+
+## Setup LDAP Client
+
+You should refer to distro specific documentation. The below is from https://ubuntu.com/server/docs/service-sssd-ldap (ubuntu 22)
+
+```bash
+sudo -i
+apt install sssd-ldap
+touch /etc/sssd/sssd.conf
+chown root:root /etc/sssd/sssd.conf
+chmod 600 /etc/sssd/sssd.conf
+```
+
+add data to `/etc/sssd/sssd.conf`:
+```
+[sssd]
+config_file_version = 2
+domains = MACHINE.cs.hunter.cuny.edu
+
+[domain/MACHINE.cs.hunter.cuny.edu]
+id_provider = ldap
+auth_provider = ldap
+ldap_uri = ldaps://MACHINE.cs.hunter.cuny.edu
+cache_credentials = True
+ldap_search_base = ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu
+create_homedir = False
+remove_homedir = False
+```
+
+```bash
+# start daemon
+sudo systemctl start sssd.service
+```
 
 <hr>
 
