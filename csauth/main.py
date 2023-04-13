@@ -13,6 +13,7 @@ from common.script_logger import (
 from common import security_helpers
 from scripts.patch_python_env import main as patch_python_env
 from scripts.unix_to_tsv import main as unix_to_tsv
+from scripts.hosts_to_tsv import main as hosts_to_tsv
 from scripts.load_tsv import main as load_tsv
 
 
@@ -23,6 +24,9 @@ class COMMANDS:
 
     # export unix users/groups to interchange formatted data
     unix_to_tsv = 'unix_to_tsv'
+
+    # export /etc/hosts interchange formatted data
+    hosts_to_tsv = 'hosts_to_tsv'
 
     # import interchange formatted data into LDAP database
     load_tsv = 'load_tsv'
@@ -81,6 +85,13 @@ if __name__ == '__main__':
             cmd_args.shadow_file,
             cmd_args.group_file,
         )
+
+    elif base_args.command_name == COMMANDS.hosts_to_tsv:
+        parser = new_base_arg_parser()
+        parser.add_argument('hosts_file', help="The unix passwd file to import")
+        cmd_args = parser.parse_args()
+        console.debug(f'cmd args {cmd_args}')
+        hosts_to_tsv(console, cmd_args.hosts_file)
 
     elif base_args.command_name == COMMANDS.load_tsv:
         security_helpers.validate_applocals_file()
