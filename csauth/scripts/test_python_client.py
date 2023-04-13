@@ -10,10 +10,11 @@ def _test_port_389(logger) -> bool:
         with ldap.new_connection(use_ssl=False) as conn:
             pass
     except Exception as e:
-        logger.error("[TEST PORT 389] failed")
+        logger.error("[TEST PORT 389] failed :(")
         logger.error(f'{e}')
         return False
     else:
+        logger.info("[TEST PORT 389] passed :)")
         return True
 
 
@@ -23,10 +24,11 @@ def _test_port_tls_port_636(logger) -> bool:
         with ldap.new_connection(use_ssl=True) as conn:
             pass
     except Exception as e:
-        logger.error("[TEST PORT 389] failed")
+        logger.error("[TEST PORT 636] failed :(")
         logger.error(f'{e}')
         return False
     else:
+        logger.info("[TEST PORT 636] passed :)")
         return True
 
 
