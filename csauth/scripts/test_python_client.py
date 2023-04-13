@@ -1,6 +1,8 @@
 
 
 from logging import Logger
+import sys
+
 from common import ldap_helpers as ldap
 
 
@@ -40,7 +42,11 @@ def main(logger: Logger):
     ]
 
     if all(results):
+        exit_code = 0
         logger.info("all tests pass :)")
     else:
+        exit_code = 1
         logger.error("1 or more tests failed :(")
+
     logger.debug("bye")
+    sys.exit(exit_code)
