@@ -97,9 +97,10 @@ certtool --generate-self-signed \
 # collect the new CA cert
 # this command creates symlink: (/etc/ssl/certs/slapdca.pem)
 update-ca-certificates
-```
 
-__NOTICE__: move `/usr/local/share/ca-certificates/slapdca.crt` onto a flash drive. _ldaps://_ clients will need to load this CA certificate.
+# copy `/usr/local/share/ca-certificates/slapdca.crt` onto a flash drive. ldaps:// clients will need to load this CA certificate.
+cp /usr/local/share/ca-certificates/slapdca.crt /media/USER/myflashdrive
+```
 
 Create `/etc/ssl/MACHINE.info`
 ```
@@ -191,22 +192,27 @@ ufw allow from 127.0.0.1 to 127.0.0.1 port 636
 ## Test Security Settings
 
 ```bash
+# expected results:
+# ⌛❌ = hangs
+# 💀❌ = crashes
+#   ✅ = works
+
 # Search using SASL as root on SERVER (talking to localhost)
-✅ sudo ldapwhoami -Q -Y EXTERNAL -H ldapi:///
+  ✅ sudo ldapwhoami -Q -Y EXTERNAL -H ldapi:///
 
 # search using anonymous simple auth fails on SERVER and CLIENT
-❌ ldapwhoami -H ldap://localhost -x
-❌ ldapwhoami -H ldaps://localhost -x
-❌ ldapwhoami -H ldap://MACHINE.cs.hunter.cuny.edu -x
+💀❌ ldapwhoami -H ldap://localhost -x
+💀❌ ldapwhoami -H ldaps://localhost -x
+💀❌ ldapwhoami -H ldap://MACHINE.cs.hunter.cuny.edu -x
 
 # ldaps works on the CLIENT
-✅ ldapwhoami -x -H ldaps://MACHINE.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W
+  ✅ ldapwhoami -x -H ldaps://MACHINE.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W
 
 # ldap in the clear only works on the SERVER (talking to localhost).
-✅ ldapwhoami -x -H ldap:/// -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W
+  ✅ ldapwhoami -x -H ldap:/// -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W
 
 # ldap in the clear fails on the client.
-❌ ldapwhoami -x -H ldap://MACHINE.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W
+⌛❌ ldapwhoami -x -H ldap://MACHINE.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W
 ```
 
 
