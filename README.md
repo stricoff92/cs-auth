@@ -28,6 +28,7 @@ LDAP_ADMIN_PASSWORD_BASE64 = 'BASE_64_ENCODED_PW_GOES_HERE'
 ```
 
 
+
 ```bash
 # Install needed packages.
 
@@ -51,50 +52,167 @@ ldappackagedir=/home/jon/hunter-repos/cs-auth/env/lib/python3.10/site-packages/l
 
 ./test
 ```
+
 <hr>
 
-## Preprare for TLS
+## Setup TLS
+
+You should refer to distro specific documentation. The below is from https://ubuntu.com/server/docs/service-ldap-with-tls (ubuntu 22)
 
 ```bash
-# setup directories
-sudo -i;
-mkdir /root/slapd/
-mkdir /root/slapd/CA;
-mkdir /root/slapd/CA/private;
-
-# These instructions assume openssl will dump new certs to ./demoCA.
-# You can confirm this by running:
-openssl version -d
-# then check the OPENSSLDIR/openssl.cnf file
-cat OPENSSLDIR/openssl.cnf | grep dir
-# dir		= ./demoCA		# Where everything is kept
-# dir		= ./demoCA		# TSA root directory
-
-mkdir /root/slapd/CA/demoCA
-mkdir /root/slapd/CA/demoCA/newcerts/
-touch /root/slapd/CA/demoCA/index.txt
-echo 01 > /root/slapd/CA/demoCA/serial
-
+# copy ldif templates to a gitignored directory
+cp ldif_templates/*.ldif ldif/
 ```
 
 ```bash
+# show the config
+sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config cn=config
+```
+
+
+```bash
+sudo -i
+
+apt install gnutls-bin ssl-cert
+
 # Create CA Certificate and key
-cd /root/slapd/CA
-# Create ca key
-openssl genrsa -out ca.key 4096
-# Create ca cert signed with ca key
-openssl req -new -x509 -days 9999 -key ca.key -out ca.cert.pem
+sudo certtool --generate-privkey --bits 4096 --outfile /etc/ssl/private/slapd-cakey.pem
+```
 
-# Create Server TLS Certificate and key
-# Replace MACHINE with server hostname.
+Create `/etc/ssl/ca.info`
+```
+cn = Hunter College
+ca
+cert_signing_key
+expiration_days = 9999
+```
+
+Create self signed CA certificate
+```bash
+certtool --generate-self-signed \
+--load-privkey /etc/ssl/private/slapd-cakey.pem \
+--template /etc/ssl/ca.info \
+--outfile /usr/local/share/ca-certificates/slapdca.crt
+
+# collect the new CA cert
+# this command creates symlink: (/etc/ssl/certs/slapdca.pem)
+update-ca-certificates
+
+# copy `/usr/local/share/ca-certificates/slapdca.crt` onto a flash drive. ldaps:// clients will need to load this CA certificate.
+cp /usr/local/share/ca-certificates/slapdca.crt /media/USER/myflashdrive
+```
+
+Create `/etc/ssl/MACHINE.info`
+```
+organization = Hunter College
+cn = MACHINE_FQDN_GOES_HERE
+tls_www_server
+encryption_key
+signing_key
+expiration_days = 9999
+
+```
+
+Create TLS key and certificate
+```bash
 # create private key
-openssl genrsa -out private/MACHINE.key 4096
+certtool --generate-privkey \
+--bits 2048 \
+--outfile /etc/ldap/MACHINE_slapd_key.pem
 
-# create certificate signing request
-openssl req -new -key private/MACHINE.key -out MACHINE.csr
+# create certificate
+sudo certtool --generate-certificate \
+--load-privkey /etc/ldap/MACHINE_slapd_key.pem \
+--load-ca-certificate /etc/ssl/certs/slapdca.pem \
+--load-ca-privkey /etc/ssl/private/slapd-cakey.pem \
+--template /etc/ssl/MACHINE.info \
+--outfile /etc/ldap/MACHINE_slapd_cert.pem
 
-# Create LDAP server certificate
-openssl ca -days 9999 -keyfile ca.key -cert ca.cert.pem -in MACHINE.csr -out private/MACHINE.crt
+# Adjust permissions
+sudo chgrp openldap /etc/ldap/MACHINE_slapd_key.pem
+sudo chmod 0640 /etc/ldap/MACHINE_slapd_key.pem
+```
+
+```bash
+# Apply slapd configuration changes
+
+# replace MACHINE in ldif/set_tls_config.ldif then run
+ldapmodify -Y EXTERNAL -H ldapi:// -f ldif/set_tls_config.ldif
+```
+
+Update slapd args in `/etc/default/slapd`. add `ldaps:///` to `SLAPD_SERVICES`, and then restart slapd with `systemctl restart slapd`
+
+<hr>
+Helper commands
+
+```bash
+# setup local port forwarding for ldap://
+ssh -L 1389:LDAPHOST:389 user@jumpbox.host
+
+# setup local port forwarding for ldaps://
+ssh -L 1636:LDAPHOST:636 user@jumpbox.host
+
+```
+
+<hr>
+
+
+## Apply Security configurations to SLAPD
+
+```bash
+
+# Disable anonymous bind requests
+sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
+
+```
+
+## Apply Security configurations to LDAP server OS (Ubuntu)
+
+```bash
+sudo -i
+
+# view network firewall settings
+ufw status verbose
+
+# setup network firewall, allow ssh/sftp
+ufw enable && ufw allow 22
+
+# By default we'll block all incoming traffic
+sudo ufw default deny incoming
+
+# allow localhost to access ldap in the clear
+ufw allow from 127.0.0.1 to 127.0.0.1 port 389
+
+# allow subnet ipv4 traffic to access ldap over TLS
+ufw allow from 146.95.214.0/24 proto tcp to 0.0.0.0/0 port 636
+ufw allow from 127.0.0.1 to 127.0.0.1 port 636
+
+```
+
+## Test Security Settings
+
+```bash
+# expected results:
+# ⌛❌ = hangs
+# 💀❌ = crashes
+#   ✅ = works
+
+# Search using SASL as root on SERVER (talking to localhost)
+  ✅ sudo ldapwhoami -Q -Y EXTERNAL -H ldapi:///
+
+# search using anonymous simple auth fails on SERVER and CLIENT
+💀❌ ldapwhoami -H ldap://localhost -x
+💀❌ ldapwhoami -H ldaps://localhost -x
+💀❌ ldapwhoami -H ldap://MACHINE.cs.hunter.cuny.edu -x
+
+# ldaps works on the CLIENT
+  ✅ ldapwhoami -x -H ldaps://MACHINE.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W
+
+# ldap in the clear only works on the SERVER (talking to localhost).
+  ✅ ldapwhoami -x -H ldap:/// -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W
+
+# ldap in the clear fails on the client.
+⌛❌ ldapwhoami -x -H ldap://MACHINE.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W
 ```
 
 
@@ -122,22 +240,12 @@ sudo ./main unix_to_tsv /etc/passwd /etc/shadow /etc/group
 
 ```
 
-## Using `ldapmodify` to configure slapd
-```bash
-# show global config
-sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b cn=config -LLL
-
-# Disable anonymous bind requests
-sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
-```
-
-
 ## `ldapsearch` example usage
 ```bash
-# Search using SASL auth as root
+# Search using SASL as root on ldap server
 sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
 
-# test search using anonymous simple auth
-# (this should fail)
-ldapsearch -b 'dc=cs,dc=hunter,dc=cuny,dc=edu' -H ldap://localhost -x
+# ldaps search works locally and on the subnet.
+ldapsearch -x -H ldaps://MACHINE.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
+
 ```
