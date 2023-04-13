@@ -173,7 +173,7 @@ sudo -i
 # view network firewall settings
 ufw status verbose
 
-# setup network firewall
+# setup network firewall, allow ssh/sftp
 ufw enable && ufw allow 22
 
 # By default we'll block all incoming traffic
@@ -182,7 +182,7 @@ sudo ufw default deny incoming
 # allow localhost to access ldap in the clear
 ufw allow from 127.0.0.1 to 127.0.0.1 port 389
 
-# allow subnet ipv4 traffic access to port 636
+# allow subnet ipv4 traffic to access ldap over TLS
 ufw allow from 146.95.214.0/24 proto tcp to 0.0.0.0/0 port 636
 ufw allow from 127.0.0.1 to 127.0.0.1 port 636
 
