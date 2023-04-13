@@ -57,12 +57,8 @@ if __name__ == '__main__':
     # Test & Development scripts
     # TODO: Delete these commands.
     if base_args.command_name == COMMANDS.base_64_encode:
-        parser = new_base_arg_parser()
-        parser.add_argument('value_to_encode', help="The value to BASE64 encode")
-        cmd_args = parser.parse_args()
-        console.debug(f'cmd args {cmd_args}')
-
-        print(security_helpers.b64encode(cmd_args.value_to_encode))
+        value_to_encode = getpass.getpass("Enter a value to encode: ")
+        print(security_helpers.b64encode(value_to_encode))
 
     elif base_args.command_name == COMMANDS.patch_python_env:
         from scripts.patch_python_env import main as patch_python_env
