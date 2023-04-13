@@ -99,6 +99,8 @@ certtool --generate-self-signed \
 update-ca-certificates
 ```
 
+__NOTICE__: move `/usr/local/share/ca-certificates/slapdca.crt` onto a flash drive. _ldaps://_ clients will need to load this CA certificate.
+
 Create `/etc/ssl/MACHINE.info`
 ```
 organization = Hunter College
@@ -139,14 +141,20 @@ ldapmodify -Y EXTERNAL -H ldapi:// -f ldif/set_tls_config.ldif
 
 Update slapd args in `/etc/default/slapd`. add `ldaps:///` to `SLAPD_SERVICES`, and then restart slapd with `systemctl restart slapd`
 
+<hr>
+Helper commands
+
 ```bash
-# optional: setup local port forwarding through jump box
+# setup local port forwarding for ldap://
+ssh -L 1389:LDAPHOST:389 user@jumpbox.host
+
+# setup local port forwarding for ldaps://
 ssh -L 1636:LDAPHOST:636 user@jumpbox.host
 
-# now you connect to ldaps://localhost:1636
 ```
 
 <hr>
+
 
 ## Apply Security configurations to SLAPD
 
@@ -171,8 +179,13 @@ ufw enable && ufw allow 22
 # By default we'll block all incoming traffic
 sudo ufw default deny incoming
 
+ufw allow from 127.0.0.1 to 127.0.0.1 port 389
+
 # allow subnet ipv4 traffic access to port 636
 ufw allow from 146.95.214.0/24 proto tcp to 0.0.0.0/0 port 636
+
+ufw allow from 127.0.0.1 to 127.0.0.1 port 636
+
 ```
 
 <hr>
@@ -201,10 +214,19 @@ sudo ./main unix_to_tsv /etc/passwd /etc/shadow /etc/group
 
 ## `ldapsearch` example usage
 ```bash
-# Search using SASL auth as root
+# Search using SASL as root on ldap server
 sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
 
-# test search using anonymous simple auth
-# (this should fail)
+# search using anonymous simple auth
+# (this should fail on localhost and on the subnet)
 ldapsearch -b 'dc=cs,dc=hunter,dc=cuny,dc=edu' -H ldap://localhost -x
+ldapsearch -b 'dc=cs,dc=hunter,dc=cuny,dc=edu' -H ldaps://localhost -x
+ldapsearch -b 'dc=cs,dc=hunter,dc=cuny,dc=edu' -H cs-util.cs.hunter.cuny.edu -x
+
+# ldaps search works locally and on the subnet.
+ldapsearch -x -H ldaps://cs-util.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
+
+# ldap in the clear only works on localhost.
+ldapsearch -x -H ldap:/// -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
+ldapsearch -x -H ldap://cs-util.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
 ```
