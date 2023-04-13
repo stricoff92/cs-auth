@@ -24,6 +24,7 @@ from applocals import (
     LDAP_ADMIN_DN,
     LDAP_ADMIN_PASSWORD_BASE64,
     LDAP_SERVER_DOMAIN_COMPONENTS,
+    LDAP_USE_SSL,
 )
 from common import security_helpers
 
@@ -62,22 +63,30 @@ class InvalidPosixGroupAttributesError(LDAPCRUDError):
 
 # LDAP client factories # # #
 
-def new_server(host_name: Optional[str] = None) -> LDAPServer:
+def new_server(
+    host_name: Optional[str] = None,
+    use_ssl: bool = None,
+) -> LDAPServer:
     ''' Factory for creating a new Server instance
     '''
     ldap_host = host_name if host_name else LDAP_SERVER_HOST
-    return LDAPServer(ldap_host)
+    if use_ssl:
+        return LDAPServer(ldap_host, port=636, use_ssl=True)
+    else:
+        return LDAPServer(ldap_host)
 
 def new_connection(
         server: Optional[LDAPServer] = None,
         admin_dn: Optional[str] = None,
         admin_pwd: Optional[str] = None,
         auto_bind: bool = True,
+        use_ssl: Optional[bool] = None,
 ) -> LDAPConnection:
     ''' Factory for creating a new Connection instance.
     '''
+    use_ssl = use_ssl if use_ssl is not None else LDAP_USE_SSL
     return LDAPConnection(
-        server if server else new_server(),
+        server if server else new_server(use_ssl=use_ssl),
         admin_dn if admin_dn else LDAP_ADMIN_DN,
         admin_pwd if admin_pwd else security_helpers.b64decode(LDAP_ADMIN_PASSWORD_BASE64),
         auto_bind=auto_bind,

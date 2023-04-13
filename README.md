@@ -20,11 +20,12 @@ chmod 600 csauth/applocals.py
 ```
 
 Example `applocals.py` file
-```
+```python
 LDAP_SERVER_HOST = 'cs-auth'
 LDAP_SERVER_DOMAIN_COMPONENTS = 'dc=cs,dc=hunter,dc=cuny,dc=edu'
 LDAP_ADMIN_DN = f'cn=admin,{LDAP_SERVER_DOMAIN_COMPONENTS}'
 LDAP_ADMIN_PASSWORD_BASE64 = 'BASE_64_ENCODED_PW_GOES_HERE'
+LDAP_USE_SSL = True
 ```
 
 
