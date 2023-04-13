@@ -11,10 +11,6 @@ from common.script_logger import (
     get_task_logger
 )
 from common import security_helpers
-from scripts.patch_python_env import main as patch_python_env
-from scripts.unix_to_tsv import main as unix_to_tsv
-from scripts.hosts_to_tsv import main as hosts_to_tsv
-from scripts.load_tsv import main as load_tsv
 
 
 # Available commands that this CLI app can execute
@@ -69,9 +65,12 @@ if __name__ == '__main__':
         print(security_helpers.b64encode(cmd_args.value_to_encode))
 
     elif base_args.command_name == COMMANDS.patch_python_env:
+        from scripts.patch_python_env import main as patch_python_env
         patch_python_env(console)
 
     elif base_args.command_name == COMMANDS.unix_to_tsv:
+        from scripts.unix_to_tsv import main as unix_to_tsv
+
         parser = new_base_arg_parser()
         parser.add_argument('passwd_file', help="The unix passwd file to import")
         parser.add_argument('shadow_file', help="The unix shadow file to import")
@@ -87,6 +86,8 @@ if __name__ == '__main__':
         )
 
     elif base_args.command_name == COMMANDS.hosts_to_tsv:
+        from scripts.hosts_to_tsv import main as hosts_to_tsv
+
         parser = new_base_arg_parser()
         parser.add_argument('hosts_file', help="The unix passwd file to import")
         cmd_args = parser.parse_args()
@@ -94,6 +95,8 @@ if __name__ == '__main__':
         hosts_to_tsv(console, cmd_args.hosts_file)
 
     elif base_args.command_name == COMMANDS.load_tsv:
+        from scripts.load_tsv import main as load_tsv
+
         security_helpers.validate_applocals_file()
         parser = new_base_arg_parser()
         parser.add_argument('user_file', help="The user tsv file to import")
