@@ -165,7 +165,7 @@ sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
 
 ```
 
-## Apply Security configurations to Ubuntu
+## Apply Security configurations to LDAP server OS (Ubuntu)
 
 ```bash
 sudo -i
@@ -187,6 +187,28 @@ ufw allow from 146.95.214.0/24 proto tcp to 0.0.0.0/0 port 636
 ufw allow from 127.0.0.1 to 127.0.0.1 port 636
 
 ```
+
+## Test Security Settings
+
+```bash
+# Search using SASL as root on SERVER (talking to localhost)
+✅ sudo ldapwhoami -Q -Y EXTERNAL -H ldapi:///
+
+# search using anonymous simple auth fails on SERVER and CLIENT
+❌ ldapwhoami -H ldap://localhost -x
+❌ ldapwhoami -H ldaps://localhost -x
+❌ ldapwhoami -H ldap://MACHINE.cs.hunter.cuny.edu -x
+
+# ldaps works on the CLIENT
+✅ ldapwhoami -x -H ldaps://MACHINE.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W
+
+# ldap in the clear only works on the SERVER (talking to localhost).
+✅ ldapwhoami -x -H ldap:/// -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W
+
+# ldap in the clear fails on the client.
+❌ ldapwhoami -x -H ldap://MACHINE.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W
+```
+
 
 <hr>
 
@@ -217,16 +239,7 @@ sudo ./main unix_to_tsv /etc/passwd /etc/shadow /etc/group
 # Search using SASL as root on ldap server
 sudo ldapsearch -Q -Y EXTERNAL -H ldapi:/// -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
 
-# search using anonymous simple auth
-# (this should fail on localhost and on the subnet)
-ldapsearch -b 'dc=cs,dc=hunter,dc=cuny,dc=edu' -H ldap://localhost -x
-ldapsearch -b 'dc=cs,dc=hunter,dc=cuny,dc=edu' -H ldaps://localhost -x
-ldapsearch -b 'dc=cs,dc=hunter,dc=cuny,dc=edu' -H cs-util.cs.hunter.cuny.edu -x
-
 # ldaps search works locally and on the subnet.
-ldapsearch -x -H ldaps://cs-util.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
+ldapsearch -x -H ldaps://MACHINE.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
 
-# ldap in the clear only works on localhost.
-ldapsearch -x -H ldap:/// -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
-ldapsearch -x -H ldap://cs-util.cs.hunter.cuny.edu -D 'cn=admin,dc=cs,dc=hunter,dc=cuny,dc=edu' -W -b 'cn=jonst,ou=people,ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu'
 ```
