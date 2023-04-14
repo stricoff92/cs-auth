@@ -33,12 +33,16 @@ from common import security_helpers
 ALL_CLASSES_SEARCH_FILTER = '(objectClass=*)'
 POSIX_USER_SEARCH_FILTER = '(objectClass=posixAccount)'
 POSIX_GROUP_SEARCH_FILTER = '(objectClass=posixGroup)'
+IP_HOST_SEARCH_FILTER = '(objectClass=ipHost)'
 
 POSIX_USER_CLASS_LIST = [
     'account', 'posixAccount', 'shadowAccount', 'top',
 ]
 POSIX_GROUP_CLASS_LIST = [
     'posixGroup', 'top',
+]
+IP_HOST_CLASS_LIST = [
+    'device', 'ipHost', 'top',
 ]
 
 # Errors.
@@ -58,6 +62,9 @@ class InvalidPosixUserAttributesError(LDAPCRUDError):
     pass
 
 class InvalidPosixGroupAttributesError(LDAPCRUDError):
+    pass
+
+class IPHostAlreadyExistsError(LDAPCRUDError):
     pass
 
 
@@ -124,6 +131,11 @@ def _get_posix_group_dn(cn: str) -> str:
         f'cn={cn},ou=groups,ou=linuxlab'
     )
 
+def _get_ip_host_dn(cn: str) -> str:
+    return _add_base_domain_components_to_dn(
+        f'cn={cn},ou=hosts,ou=linuxlab'
+    )
+
 # Low Level LDAP CRUD methods
 
 def _dn_exists(conn: LDAPConnection, dn: str, class_filter=None) -> bool:
@@ -149,6 +161,12 @@ def posix_group_exists(conn: LDAPConnection, cn: str) -> bool:
         class_filter=POSIX_GROUP_SEARCH_FILTER,
     )
 
+def ip_host_exists(conn: LDAPConnection, cn: str) -> bool:
+    return _dn_exists(
+        conn,
+        _get_ip_host_dn(cn),
+        class_filter=IP_HOST_SEARCH_FILTER,
+    )
 
 def _ldap_entry_to_dict(entry: LDAPEntry) -> Dict:
     """ Convert an ldap entry to a python dict.
@@ -271,6 +289,21 @@ def sync_user_password(
     conn.modify(dn, changes)
     return conn.result
 
+def add_ip_host(
+    conn: LDAPConnection,
+    cn: str,
+    ipv4: str
+):
+    if ip_host_exists(conn, cn):
+        raise IPHostAlreadyExistsError
+    dn = _get_ip_host_dn(cn)
+    entry = create_ip_host_entry(cn, ipv4)
+    conn.add(
+        dn,
+        IP_HOST_CLASS_LIST,
+        entry,
+    )
+    return conn.result
 
 # LDAP entry attribute factories # # #
 def create_posix_user_entry_dict(
@@ -308,3 +341,12 @@ def create_posix_group_entry_dict(
     if len(members):
         entry['memberUid'] = members
     return entry
+
+def create_ip_host_cn(ipv4: str, alias: str) -> str:
+    return f'{alias}+ipHostNumber={ipv4}'
+
+def create_ip_host_entry(cn: str, ipv4: str) -> Dict:
+    return {
+        'cn': cn,
+        'ipHostNumber': ipv4,
+    }
