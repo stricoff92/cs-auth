@@ -21,6 +21,7 @@ def main(logger: Logger, hosts_file: str):
         for line in host_lines:
             parts = line.strip('\n').split('\t')
             if len(parts) >= 3:
+                print("parts", parts)
                 writer.writerow(parts[:3])
                 summary['outputted_lines'] += 1
             else:
