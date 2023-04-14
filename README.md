@@ -242,6 +242,7 @@ add data to `/etc/sssd/sssd.conf`:
 [sssd]
 config_file_version = 2
 domains = MACHINE.cs.hunter.cuny.edu
+services = nss,pam
 
 [domain/MACHINE.cs.hunter.cuny.edu]
 id_provider = ldap
@@ -256,6 +257,18 @@ remove_homedir = False
 ```bash
 # start daemon
 sudo systemctl start sssd.service
+```
+
+edit /etc/nsswitch.conf. add 'sss' as a hosts provider
+```
+# /etc/nsswitch.conf
+...
+hosts:          files mdns4_minimal [NOTFOUND=return] dns sss
+```
+
+```bash
+# restart daemon
+sudo systemctl restart sssd.service
 ```
 
 <hr>
