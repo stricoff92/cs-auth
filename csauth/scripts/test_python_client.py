@@ -2,6 +2,7 @@
 
 from logging import Logger
 import sys
+import traceback
 
 from common import ldap_helpers as ldap
 
@@ -14,6 +15,7 @@ def _test_port_389(logger) -> bool:
     except Exception as e:
         logger.error("[TEST PORT 389] failed :(")
         logger.error(f'{e}')
+        logger.error(traceback.format_exc())
         return False
     else:
         logger.info("[TEST PORT 389] passed :)")
@@ -28,6 +30,7 @@ def _test_port_tls_port_636(logger) -> bool:
     except Exception as e:
         logger.error("[TEST PORT 636] failed :(")
         logger.error(f'{e}')
+        logger.error(traceback.format_exc())
         return False
     else:
         logger.info("[TEST PORT 636] passed :)")
