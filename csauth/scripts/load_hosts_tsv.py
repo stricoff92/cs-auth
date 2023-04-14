@@ -28,10 +28,24 @@ def main(logger: Logger, hosts_tsv_file: str):
                 summary['skipping_host_already_added'] += 1
                 continue
 
-            ldap.add_ip_host(conn, cn, ipv4)
+            response = ldap.add_ip_host(conn, cn, ipv4)
+            try:
+                ldap.validate_response_is_success(response)
+            except ldap.LDAPCRUDError:
+                logger.error(f'failed to add host {alias} {ipv4}')
+                logger.error(f'{response}')
+                summary['add_host_errors'] += 1
 
-
-
+                should_continue = input("press y to continue importing: ")
+                if should_continue.lower().strip() == 'y':
+                    logger.debug("continuing...")
+                    continue
+                else:
+                    logger.debug("exiting...")
+                    break
+            else:
+                logger.info(f'{alias} {ipv4} has been added')
+                summary['hosts_added'] += 1
 
 
     logger.info('\n* * * * Summary * * * *\n' + '\n'.join(f'{k}:  {summary[k]}' for k in summary))
