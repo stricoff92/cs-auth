@@ -24,6 +24,9 @@ class COMMANDS:
     # export /etc/hosts interchange formatted data
     hosts_to_tsv = 'hosts_to_tsv'
 
+    # import /etc/hosts interchange formatted data
+    load_hosts_tsv = 'load_hosts_tsv'
+
     # import interchange formatted data into LDAP database
     load_tsv = 'load_tsv'
 
@@ -89,6 +92,14 @@ if __name__ == '__main__':
         cmd_args = parser.parse_args()
         console.debug(f'cmd args {cmd_args}')
         hosts_to_tsv(console, cmd_args.hosts_file)
+
+    elif base_args.command_name == COMMANDS.load_hosts_tsv:
+        from scripts.load_hosts_tsv import main as load_hosts_tsv
+        parser = new_base_arg_parser()
+        parser.add_argument('hosts_tsv', help="The interchange formatted data to import")
+        cmd_args = parser.parse_args()
+        console.debug(f'cmd args {cmd_args}')
+        load_hosts_tsv(console, cmd_args.hosts_tsv)
 
     elif base_args.command_name == COMMANDS.load_tsv:
         from scripts.load_tsv import main as load_tsv
