@@ -1,12 +1,14 @@
 
-import csv
 from collections import Counter
+import csv
 from logging import Logger
+import re
 
 from common.file_wrapper import OutputFileWrapper
 
 
 def main(logger: Logger, hosts_file: str):
+    ipv4_patt = re.compile(r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$')
     summary = Counter()
 
     host_lines = []
@@ -19,8 +21,8 @@ def main(logger: Logger, hosts_file: str):
     with hosts_output as f:
         writer = csv.writer(f, delimiter='\t')
         for line in host_lines:
-            parts = line.strip('\n').split('\t')
-            if len(parts) >= 3:
+            parts = [p for p in line.strip('\n').split('\t') if p.strip() != '']
+            if len(parts) >= 3 and ipv4_patt.match(parts[0]):
                 print("parts", parts)
                 writer.writerow(parts[:3])
                 summary['outputted_lines'] += 1
