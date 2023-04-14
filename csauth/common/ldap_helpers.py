@@ -5,6 +5,7 @@
         > Perform basic CRUD operations against the LDAP server.
 """
 
+import ssl
 from typing import (
     Optional,
     Dict,
@@ -14,6 +15,7 @@ from typing import (
 from ldap3 import (
     Server as LDAPServer,
     Connection as LDAPConnection,
+    Tls,
     ALL_ATTRIBUTES,
     MODIFY_REPLACE,
 )
@@ -25,6 +27,7 @@ from applocals import (
     LDAP_ADMIN_PASSWORD_BASE64,
     LDAP_SERVER_DOMAIN_COMPONENTS,
     LDAP_USE_SSL,
+    LDAP_SERVER_CA_CERT,
 )
 from common import security_helpers
 
@@ -78,7 +81,14 @@ def new_server(
     '''
     ldap_host = host_name if host_name else LDAP_SERVER_HOST
     if use_ssl:
-        return LDAPServer(ldap_host, port=636, use_ssl=True)
+        return LDAPServer(
+            ldap_host,
+            port=636,
+            tls=Tls(
+                ca_certs_file=LDAP_SERVER_CA_CERT,
+                validate=ssl.CERT_REQUIRED,
+            ),
+        )
     else:
         return LDAPServer(ldap_host)
 
