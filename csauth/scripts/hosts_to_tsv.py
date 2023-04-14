@@ -7,6 +7,11 @@ import re
 from common.file_wrapper import OutputFileWrapper
 
 
+def clean_part(part: str) -> str:
+    if ' ' in part.strip():
+        return part.strip().split(' ')[0]
+    return part
+
 def main(logger: Logger, hosts_file: str):
     ipv4_patt = re.compile(r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$')
     summary = Counter()
@@ -21,7 +26,7 @@ def main(logger: Logger, hosts_file: str):
     with hosts_output as f:
         writer = csv.writer(f, delimiter='\t')
         for line in host_lines:
-            parts = [p for p in line.strip('\n').split('\t') if p.strip() != '']
+            parts = [clean_part(p) for p in line.strip('\n').split('\t') if p.strip() != '']
             if len(parts) >= 3 and ipv4_patt.match(parts[0]):
                 logger.debug(f'writing to output: {parts[:3]}')
                 writer.writerow(parts[:3])
