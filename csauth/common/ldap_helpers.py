@@ -72,9 +72,11 @@ class IPHostAlreadyExistsError(LDAPCRUDError):
     pass
 
 
-# LDAP client factories # # #
 LDAP_URI_PATTERN = re.compile(r'^ldaps?\:\/\/')
+LDAP_CLEARTEXT_URI_PROTOCOL = 'ldap://'
+LDAP_SSL_URI_PROTOCOL = 'ldaps://'
 
+# LDAP client factories # # #
 def new_server(
     host_name: Optional[str] = None,
     use_ssl: bool = None,
@@ -87,7 +89,7 @@ def new_server(
 
     if use_ssl:
         return LDAPServer(
-            'ldaps://' + ldap_host,
+            LDAP_SSL_URI_PROTOCOL + ldap_host,
             port=636,
             tls=Tls(
                 ca_certs_file=LDAP_SERVER_CA_CERT,
@@ -95,7 +97,7 @@ def new_server(
             ),
         )
     else:
-        return LDAPServer('ldap://' + ldap_host)
+        return LDAPServer(LDAP_CLEARTEXT_URI_PROTOCOL + ldap_host)
 
 def new_connection(
         server: Optional[LDAPServer] = None,
@@ -106,6 +108,9 @@ def new_connection(
 ) -> LDAPConnection:
     ''' Factory for creating a new Connection instance.
     '''
+    if server is not None and use_ssl is not None:
+        raise ValueError("invalid arg combination passed")
+
     use_ssl = use_ssl if use_ssl is not None else LDAP_USE_SSL
     return LDAPConnection(
         server if server else new_server(use_ssl=use_ssl),
