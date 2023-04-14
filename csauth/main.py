@@ -11,18 +11,21 @@ from common.script_logger import (
     get_task_logger
 )
 from common import security_helpers
-from scripts.patch_python_env import main as patch_python_env
-from scripts.unix_to_tsv import main as unix_to_tsv
-from scripts.load_tsv import main as load_tsv
 
 
 # Available commands that this CLI app can execute
 class COMMANDS:
-    # Fix python 3.10 compat issues with ldap3 library
-    patch_python_env = 'patch_python_env'
+    # test connections to port 389 & 636 using python client
+    test_python_client = 'test_python_client'
 
     # export unix users/groups to interchange formatted data
     unix_to_tsv = 'unix_to_tsv'
+
+    # export /etc/hosts interchange formatted data
+    hosts_to_tsv = 'hosts_to_tsv'
+
+    # import /etc/hosts interchange formatted data
+    load_hosts_tsv = 'load_hosts_tsv'
 
     # import interchange formatted data into LDAP database
     load_tsv = 'load_tsv'
@@ -57,17 +60,16 @@ if __name__ == '__main__':
     # Test & Development scripts
     # TODO: Delete these commands.
     if base_args.command_name == COMMANDS.base_64_encode:
-        parser = new_base_arg_parser()
-        parser.add_argument('value_to_encode', help="The value to BASE64 encode")
-        cmd_args = parser.parse_args()
-        console.debug(f'cmd args {cmd_args}')
+        value_to_encode = getpass.getpass("Enter a value to encode: ")
+        print(security_helpers.b64encode(value_to_encode))
 
-        print(security_helpers.b64encode(cmd_args.value_to_encode))
-
-    elif base_args.command_name == COMMANDS.patch_python_env:
-        patch_python_env(console)
+    elif base_args.command_name == COMMANDS.test_python_client:
+        from scripts.test_python_client import main as test_python_client
+        test_python_client(console)
 
     elif base_args.command_name == COMMANDS.unix_to_tsv:
+        from scripts.unix_to_tsv import main as unix_to_tsv
+
         parser = new_base_arg_parser()
         parser.add_argument('passwd_file', help="The unix passwd file to import")
         parser.add_argument('shadow_file', help="The unix shadow file to import")
@@ -82,7 +84,26 @@ if __name__ == '__main__':
             cmd_args.group_file,
         )
 
+    elif base_args.command_name == COMMANDS.hosts_to_tsv:
+        from scripts.hosts_to_tsv import main as hosts_to_tsv
+
+        parser = new_base_arg_parser()
+        parser.add_argument('hosts_file', help="The unix passwd file to import")
+        cmd_args = parser.parse_args()
+        console.debug(f'cmd args {cmd_args}')
+        hosts_to_tsv(console, cmd_args.hosts_file)
+
+    elif base_args.command_name == COMMANDS.load_hosts_tsv:
+        from scripts.load_hosts_tsv import main as load_hosts_tsv
+        parser = new_base_arg_parser()
+        parser.add_argument('hosts_tsv', help="The interchange formatted data to import")
+        cmd_args = parser.parse_args()
+        console.debug(f'cmd args {cmd_args}')
+        load_hosts_tsv(console, cmd_args.hosts_tsv)
+
     elif base_args.command_name == COMMANDS.load_tsv:
+        from scripts.load_tsv import main as load_tsv
+
         security_helpers.validate_applocals_file()
         parser = new_base_arg_parser()
         parser.add_argument('user_file', help="The user tsv file to import")

@@ -24,6 +24,7 @@ from applocals import (
     LDAP_ADMIN_DN,
     LDAP_ADMIN_PASSWORD_BASE64,
     LDAP_SERVER_DOMAIN_COMPONENTS,
+    LDAP_USE_SSL,
 )
 from common import security_helpers
 
@@ -32,12 +33,16 @@ from common import security_helpers
 ALL_CLASSES_SEARCH_FILTER = '(objectClass=*)'
 POSIX_USER_SEARCH_FILTER = '(objectClass=posixAccount)'
 POSIX_GROUP_SEARCH_FILTER = '(objectClass=posixGroup)'
+IP_HOST_SEARCH_FILTER = '(objectClass=ipHost)'
 
 POSIX_USER_CLASS_LIST = [
     'account', 'posixAccount', 'shadowAccount', 'top',
 ]
 POSIX_GROUP_CLASS_LIST = [
     'posixGroup', 'top',
+]
+IP_HOST_CLASS_LIST = [
+    'device', 'ipHost', 'top',
 ]
 
 # Errors.
@@ -59,25 +64,36 @@ class InvalidPosixUserAttributesError(LDAPCRUDError):
 class InvalidPosixGroupAttributesError(LDAPCRUDError):
     pass
 
+class IPHostAlreadyExistsError(LDAPCRUDError):
+    pass
+
 
 # LDAP client factories # # #
 
-def new_server(host_name: Optional[str] = None) -> LDAPServer:
+def new_server(
+    host_name: Optional[str] = None,
+    use_ssl: bool = None,
+) -> LDAPServer:
     ''' Factory for creating a new Server instance
     '''
     ldap_host = host_name if host_name else LDAP_SERVER_HOST
-    return LDAPServer(ldap_host)
+    if use_ssl:
+        return LDAPServer(ldap_host, port=636, use_ssl=True)
+    else:
+        return LDAPServer(ldap_host)
 
 def new_connection(
         server: Optional[LDAPServer] = None,
         admin_dn: Optional[str] = None,
         admin_pwd: Optional[str] = None,
         auto_bind: bool = True,
+        use_ssl: Optional[bool] = None,
 ) -> LDAPConnection:
     ''' Factory for creating a new Connection instance.
     '''
+    use_ssl = use_ssl if use_ssl is not None else LDAP_USE_SSL
     return LDAPConnection(
-        server if server else new_server(),
+        server if server else new_server(use_ssl=use_ssl),
         admin_dn if admin_dn else LDAP_ADMIN_DN,
         admin_pwd if admin_pwd else security_helpers.b64decode(LDAP_ADMIN_PASSWORD_BASE64),
         auto_bind=auto_bind,
@@ -115,6 +131,11 @@ def _get_posix_group_dn(cn: str) -> str:
         f'cn={cn},ou=groups,ou=linuxlab'
     )
 
+def _get_ip_host_dn(cn: str) -> str:
+    return _add_base_domain_components_to_dn(
+        f'cn={cn},ou=hosts,ou=linuxlab'
+    )
+
 # Low Level LDAP CRUD methods
 
 def _dn_exists(conn: LDAPConnection, dn: str, class_filter=None) -> bool:
@@ -140,6 +161,12 @@ def posix_group_exists(conn: LDAPConnection, cn: str) -> bool:
         class_filter=POSIX_GROUP_SEARCH_FILTER,
     )
 
+def ip_host_exists(conn: LDAPConnection, cn: str) -> bool:
+    return _dn_exists(
+        conn,
+        _get_ip_host_dn(cn),
+        class_filter=IP_HOST_SEARCH_FILTER,
+    )
 
 def _ldap_entry_to_dict(entry: LDAPEntry) -> Dict:
     """ Convert an ldap entry to a python dict.
@@ -262,6 +289,21 @@ def sync_user_password(
     conn.modify(dn, changes)
     return conn.result
 
+def add_ip_host(
+    conn: LDAPConnection,
+    cn: str,
+    ipv4: str
+):
+    if ip_host_exists(conn, cn):
+        raise IPHostAlreadyExistsError
+    dn = _get_ip_host_dn(cn)
+    entry = create_ip_host_entry(cn, ipv4)
+    conn.add(
+        dn,
+        IP_HOST_CLASS_LIST,
+        entry,
+    )
+    return conn.result
 
 # LDAP entry attribute factories # # #
 def create_posix_user_entry_dict(
@@ -299,3 +341,9 @@ def create_posix_group_entry_dict(
     if len(members):
         entry['memberUid'] = members
     return entry
+
+def create_ip_host_entry(cn: str, ipv4: str) -> Dict:
+    return {
+        'cn': cn,
+        'ipHostNumber': ipv4,
+    }
