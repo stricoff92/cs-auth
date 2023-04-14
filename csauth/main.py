@@ -15,9 +15,6 @@ from common import security_helpers
 
 # Available commands that this CLI app can execute
 class COMMANDS:
-    # Fix python 3.10 compat issues with ldap3 library
-    patch_python_env = 'patch_python_env'
-
     # test connections to port 389 & 636 using python client
     test_python_client = 'test_python_client'
 
@@ -62,10 +59,6 @@ if __name__ == '__main__':
     if base_args.command_name == COMMANDS.base_64_encode:
         value_to_encode = getpass.getpass("Enter a value to encode: ")
         print(security_helpers.b64encode(value_to_encode))
-
-    elif base_args.command_name == COMMANDS.patch_python_env:
-        from scripts.patch_python_env import main as patch_python_env
-        patch_python_env(console)
 
     elif base_args.command_name == COMMANDS.test_python_client:
         from scripts.test_python_client import main as test_python_client

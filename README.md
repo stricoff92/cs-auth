@@ -10,8 +10,6 @@ sudo dpkg-reconfigure slapd
 
 ## Python Management Suite Installation
 
-README assumes you're using python 3.10. This readme should get updated in the future. The python ldap client doesn't work out of the box with python3.10 until the library is patched. This may change with future updates. The patching that's required may also change in the future.
-
 
 ```bash
 # create applocals file
@@ -37,15 +35,12 @@ sudo apt-get install python3.10-venv python3-dev libsasl2-dev libldap2-dev libss
 ```
 
 ```bash
-# Build and patch python environment.
+# Build python environment.
 
 cd cs-auth/
 python3 -m venv env
 source env/bin/activate
 pip install -r requirements.txt
-
-# ldap3 library needs to be patched for python3.10
-ldappackagedir=/home/jon/hunter-repos/cs-auth/env/lib/python3.10/site-packages/ldap3 ./main patch_python_env
 ```
 
 ```bash
