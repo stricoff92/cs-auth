@@ -20,6 +20,7 @@ def main(logger: Logger, hosts_file: str):
         writer = csv.writer(f, delimiter='\t')
         for line in host_lines:
             parts = line.split('\t')
+            print('parts', parts)
             if len(parts) >= 3:
                 writer.writerow(parts[:3])
                 summary['outputted_lines'] += 1
