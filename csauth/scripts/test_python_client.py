@@ -11,7 +11,7 @@ def _test_port_389(logger) -> bool:
     logger.info("testing unencrypted connection...")
     try:
         with ldap.new_connection(use_ssl=False) as conn:
-            pass
+            logger.info(f'{conn}')
     except Exception as e:
         logger.error("[TEST PORT 389] failed :(")
         logger.error(f'{e}')
@@ -26,7 +26,7 @@ def _test_port_tls_port_636(logger) -> bool:
     logger.info("testing encrypted connection...")
     try:
         with ldap.new_connection(use_ssl=True) as conn:
-            pass
+            logger.info(f'{conn}')
     except Exception as e:
         logger.error("[TEST PORT 636] failed :(")
         logger.error(f'{e}')
