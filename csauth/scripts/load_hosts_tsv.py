@@ -22,7 +22,7 @@ def main(logger: Logger, hosts_tsv_file: str):
                 alias,
             ) = row
 
-            cn = ldap.create_ip_host_cn(ipv4, alias)
+            cn = alias
             if ldap.ip_host_exists(conn, cn):
                 logger.debug(f'ipHost already exists in database {alias} {ipv4}')
                 summary['skipping_host_already_added'] += 1

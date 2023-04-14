@@ -342,9 +342,6 @@ def create_posix_group_entry_dict(
         entry['memberUid'] = members
     return entry
 
-def create_ip_host_cn(ipv4: str, alias: str) -> str:
-    return f'{alias}+ipHostNumber={ipv4}'
-
 def create_ip_host_entry(cn: str, ipv4: str) -> Dict:
     return {
         'cn': cn,
