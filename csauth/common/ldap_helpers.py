@@ -5,6 +5,7 @@
         > Perform basic CRUD operations against the LDAP server.
 """
 
+import re
 import ssl
 from typing import (
     Optional,
@@ -72,6 +73,7 @@ class IPHostAlreadyExistsError(LDAPCRUDError):
 
 
 # LDAP client factories # # #
+LDAP_URI_PATTERN = re.compile(r'^ldaps?\:\/\/')
 
 def new_server(
     host_name: Optional[str] = None,
@@ -80,9 +82,12 @@ def new_server(
     ''' Factory for creating a new Server instance
     '''
     ldap_host = host_name if host_name else LDAP_SERVER_HOST
+    if LDAP_URI_PATTERN.match(ldap_host):
+        raise ValueError("passed uri includes protocol. Do not pass protocol")
+
     if use_ssl:
         return LDAPServer(
-            ldap_host,
+            'ldaps://' + ldap_host,
             port=636,
             tls=Tls(
                 ca_certs_file=LDAP_SERVER_CA_CERT,
@@ -90,7 +95,7 @@ def new_server(
             ),
         )
     else:
-        return LDAPServer(ldap_host)
+        return LDAPServer('ldap://' + ldap_host)
 
 def new_connection(
         server: Optional[LDAPServer] = None,
