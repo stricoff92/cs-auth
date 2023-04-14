@@ -23,7 +23,7 @@ def main(logger: Logger, hosts_file: str):
         for line in host_lines:
             parts = [p for p in line.strip('\n').split('\t') if p.strip() != '']
             if len(parts) >= 3 and ipv4_patt.match(parts[0]):
-                print("parts", parts)
+                logger.debug(f'writing to output: {parts[:3]}')
                 writer.writerow(parts[:3])
                 summary['outputted_lines'] += 1
             else:
