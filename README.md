@@ -25,6 +25,10 @@ LDAP_ADMIN_DN = f'cn=admin,{LDAP_SERVER_DOMAIN_COMPONENTS}'
 LDAP_ADMIN_PASSWORD_BASE64 = 'BASE_64_ENCODED_PW_GOES_HERE'
 LDAP_USE_SSL = True
 LDAP_SERVER_CA_CERT = '/usr/local/share/ca-certificates/slapdca.crt'
+
+# These 2 files get generated later in the guide
+LDAP_CLIENT_TLS_CERT = '/etc/ldap/CLIENT_MACHINE_cert.pem'
+LDAP_CLIENT_TLS_KEY = '/etc/ldap/CLIENT_MACHINE_key.pem'
 ```
 
 
@@ -110,7 +114,7 @@ expiration_days = 9999
 
 ```
 
-Create TLS key and certificate for SERVER
+### Create TLS key and certificate for SERVER
 ```bash
 # create private key
 certtool --generate-privkey \
@@ -139,9 +143,8 @@ ldapmodify -Y EXTERNAL -H ldapi:// -f ldif/set_tls_config.ldif
 
 Update slapd args in `/etc/default/slapd`. add `ldaps:///` to `SLAPD_SERVICES`, and then restart slapd with `systemctl restart slapd`
 
-Create TLS key and certificate for CLIENT(s)
 
-
+### Create TLS key and certificate for CLIENT(s)
 
 ```bash
 sudo -i
@@ -162,15 +165,30 @@ expiration_days = 9999
 # create private key
 certtool --generate-privkey \
 --bits 2048 \
---outfile cs-test-client_key.pem
+--outfile CLIENT_MACHINE_key.pem
 
 # create certificate
 sudo certtool --generate-certificate \
---load-privkey cs-test-client_key.pem \
+--load-privkey CLIENT_MACHINE_key.pem \
 --load-ca-certificate /etc/ssl/certs/slapdca.pem \
 --load-ca-privkey /etc/ssl/private/slapd-cakey.pem \
---template cs-test-client.info \
---outfile cs-test-client_cert.pem
+--template CLIENT_MACHINE.info \
+--outfile CLIENT_MACHINE_cert.pem
+
+
+# copy keys over to client machine
+cp CLIENT_MACHINE_key.pem /media/USER/flash-drive/
+cp CLIENT_MACHINE_cert.pem /media/USER/flash-drive/
+# instructions below assume these 2 keys will be placed on the client machines:
+# /etc/ldap/CLIENT_MACHINE_cert.pem
+# /etc/ldap/CLIENT_MACHINE_key.pem
+
+# make sure these permissions are set on the client machine:
+chown root:root /etc/ldap/CLIENT_MACHINE_cert.pem
+chmod 644 /etc/ldap/CLIENT_MACHINE_cert.pem
+
+chown root:root /etc/ldap/CLIENT_MACHINE_key.pem
+chmod 600 /etc/ldap/CLIENT_MACHINE_key.pem
 ```
 
 <hr>
@@ -290,6 +308,8 @@ cache_credentials = True
 ldap_search_base = ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu
 ldap_tls_cacert = /usr/local/share/ca-certificates/slapdca.crt
 ldap_tls_reqcert = hard
+ldap_tls_cert = /etc/ldap/CLIENT_MACHINE_cert.pem
+ldap_tls_key = /etc/ldap/CLIENT_MACHINE_key.pem
 ```
 
 ```bash
