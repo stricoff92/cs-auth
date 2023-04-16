@@ -251,8 +251,6 @@ auth_provider = ldap
 ldap_uri = ldaps://MACHINE.cs.hunter.cuny.edu
 cache_credentials = True
 ldap_search_base = ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu
-create_homedir = False
-remove_homedir = False
 ```
 
 ```bash
