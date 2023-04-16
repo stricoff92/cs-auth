@@ -110,7 +110,7 @@ expiration_days = 9999
 
 ```
 
-Create TLS key and certificate
+Create TLS key and certificate for SERVER
 ```bash
 # create private key
 certtool --generate-privkey \
@@ -139,6 +139,40 @@ ldapmodify -Y EXTERNAL -H ldapi:// -f ldif/set_tls_config.ldif
 
 Update slapd args in `/etc/default/slapd`. add `ldaps:///` to `SLAPD_SERVICES`, and then restart slapd with `systemctl restart slapd`
 
+Create TLS key and certificate for CLIENT(s)
+
+
+
+```bash
+sudo -i
+mkdir /root/client-certs && cd /root/client-certs
+```
+
+Create `CLIENT_MACHINE.info`
+```
+organization = Hunter College
+cn = MACHINE_FQDN_GOES_HERE
+tls_www_server
+encryption_key
+signing_key
+expiration_days = 9999
+```
+
+```bash
+# create private key
+certtool --generate-privkey \
+--bits 2048 \
+--outfile cs-test-client_key.pem
+
+# create certificate
+sudo certtool --generate-certificate \
+--load-privkey cs-test-client_key.pem \
+--load-ca-certificate /etc/ssl/certs/slapdca.pem \
+--load-ca-privkey /etc/ssl/private/slapd-cakey.pem \
+--template cs-test-client.info \
+--outfile cs-test-client_cert.pem
+```
+
 <hr>
 Helper commands
 
@@ -158,7 +192,10 @@ ssh -L 1636:LDAPHOST:636 user@jumpbox.host
 
 ```bash
 # Disable anonymous bind requests
-sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
+suod ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
+
+# Set this config value to 'demand' to require a valid tls cert from the client.
+sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/set_client_tls_cert_requirement.ldif
 ```
 
 Verify Access Controls
@@ -251,6 +288,8 @@ auth_provider = ldap
 ldap_uri = ldaps://MACHINE.cs.hunter.cuny.edu
 cache_credentials = True
 ldap_search_base = ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu
+ldap_tls_cacert = /usr/local/share/ca-certificates/slapdca.crt
+ldap_tls_reqcert = hard
 ```
 
 ```bash
