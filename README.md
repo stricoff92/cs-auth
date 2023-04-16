@@ -25,6 +25,10 @@ LDAP_ADMIN_DN = f'cn=admin,{LDAP_SERVER_DOMAIN_COMPONENTS}'
 LDAP_ADMIN_PASSWORD_BASE64 = 'BASE_64_ENCODED_PW_GOES_HERE'
 LDAP_USE_SSL = True
 LDAP_SERVER_CA_CERT = '/usr/local/share/ca-certificates/slapdca.crt'
+
+# These 2 files get generated later in the guide
+LDAP_CLIENT_TLS_CERT = '/etc/ldap/CLIENT_MACHINE_cert.pem'
+LDAP_CLIENT_TLS_KEY = '/etc/ldap/CLIENT_MACHINE_key.pem'
 ```
 
 
@@ -99,10 +103,10 @@ update-ca-certificates
 cp /usr/local/share/ca-certificates/slapdca.crt /media/USER/myflashdrive
 ```
 
-Create `/etc/ssl/MACHINE.info`
+Create `/etc/ssl/SERVER_MACHINE.info`
 ```
 organization = Hunter College
-cn = MACHINE_FQDN_GOES_HERE
+cn = SERVER_MACHINE_FQDN_GOES_HERE
 tls_www_server
 encryption_key
 signing_key
@@ -110,24 +114,24 @@ expiration_days = 9999
 
 ```
 
-Create TLS key and certificate
+### Create TLS key and certificate for SERVER
 ```bash
 # create private key
 certtool --generate-privkey \
 --bits 2048 \
---outfile /etc/ldap/MACHINE_slapd_key.pem
+--outfile /etc/ldap/SERVER_MACHINE_slapd_key.pem
 
 # create certificate
 sudo certtool --generate-certificate \
---load-privkey /etc/ldap/MACHINE_slapd_key.pem \
+--load-privkey /etc/ldap/SERVER_MACHINE_slapd_key.pem \
 --load-ca-certificate /etc/ssl/certs/slapdca.pem \
 --load-ca-privkey /etc/ssl/private/slapd-cakey.pem \
---template /etc/ssl/MACHINE.info \
---outfile /etc/ldap/MACHINE_slapd_cert.pem
+--template /etc/ssl/SERVER_MACHINE.info \
+--outfile /etc/ldap/SERVER_MACHINE_slapd_cert.pem
 
 # Adjust permissions
-sudo chgrp openldap /etc/ldap/MACHINE_slapd_key.pem
-sudo chmod 0640 /etc/ldap/MACHINE_slapd_key.pem
+sudo chgrp openldap /etc/ldap/SERVER_MACHINE_slapd_key.pem
+sudo chmod 0640 /etc/ldap/SERVER_MACHINE_slapd_key.pem
 ```
 
 ```bash
@@ -138,6 +142,56 @@ ldapmodify -Y EXTERNAL -H ldapi:// -f ldif/set_tls_config.ldif
 ```
 
 Update slapd args in `/etc/default/slapd`. add `ldaps:///` to `SLAPD_SERVICES`, and then restart slapd with `systemctl restart slapd`
+
+
+### Create TLS key and certificate for CLIENT(s)
+
+```bash
+# Create a directory on the SERVER which will hold minted client keys & certs
+sudo -i
+mkdir /root/client-certs && cd /root/client-certs
+chmod 700 /root/client-certs
+```
+
+Create `CLIENT_MACHINE.info`
+```
+organization = Hunter College
+cn = MACHINE_FQDN_GOES_HERE
+tls_www_server
+encryption_key
+signing_key
+expiration_days = 9999
+```
+
+```bash
+# create private key
+certtool --generate-privkey \
+--bits 2048 \
+--outfile CLIENT_MACHINE_key.pem
+
+# create certificate
+sudo certtool --generate-certificate \
+--load-privkey CLIENT_MACHINE_key.pem \
+--load-ca-certificate /etc/ssl/certs/slapdca.pem \
+--load-ca-privkey /etc/ssl/private/slapd-cakey.pem \
+--template CLIENT_MACHINE.info \
+--outfile CLIENT_MACHINE_cert.pem
+
+
+# copy keys over to client machine
+cp CLIENT_MACHINE_key.pem /media/USER/flash-drive/
+cp CLIENT_MACHINE_cert.pem /media/USER/flash-drive/
+# instructions below assume these 2 keys will be placed on the client machines:
+# /etc/ldap/CLIENT_MACHINE_cert.pem
+# /etc/ldap/CLIENT_MACHINE_key.pem
+
+# make sure these permissions are set on the client machine:
+chown root:root /etc/ldap/CLIENT_MACHINE_cert.pem
+chmod 644 /etc/ldap/CLIENT_MACHINE_cert.pem
+
+chown root:root /etc/ldap/CLIENT_MACHINE_key.pem
+chmod 600 /etc/ldap/CLIENT_MACHINE_key.pem
+```
 
 <hr>
 Helper commands
@@ -158,7 +212,10 @@ ssh -L 1636:LDAPHOST:636 user@jumpbox.host
 
 ```bash
 # Disable anonymous bind requests
-sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
+suod ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcDisallows_bind_anon.ldif
+
+# Require valid TLS certs from the client
+sudo ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f ldif/olcTLSVerifyClient_demand.ldif
 ```
 
 Verify Access Controls
@@ -251,8 +308,10 @@ auth_provider = ldap
 ldap_uri = ldaps://MACHINE.cs.hunter.cuny.edu
 cache_credentials = True
 ldap_search_base = ou=linuxlab,dc=cs,dc=hunter,dc=cuny,dc=edu
-create_homedir = False
-remove_homedir = False
+ldap_tls_cacert = /usr/local/share/ca-certificates/slapdca.crt
+ldap_tls_reqcert = hard
+ldap_tls_cert = /etc/ldap/CLIENT_MACHINE_cert.pem
+ldap_tls_key = /etc/ldap/CLIENT_MACHINE_key.pem
 ```
 
 ```bash

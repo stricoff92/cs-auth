@@ -29,6 +29,8 @@ from applocals import (
     LDAP_SERVER_DOMAIN_COMPONENTS,
     LDAP_USE_SSL,
     LDAP_SERVER_CA_CERT,
+    LDAP_CLIENT_TLS_CERT,
+    LDAP_CLIENT_TLS_KEY,
 )
 from common import security_helpers
 
@@ -93,6 +95,8 @@ def new_server(
             port=636,
             tls=Tls(
                 ca_certs_file=LDAP_SERVER_CA_CERT,
+                local_certificate_file=LDAP_CLIENT_TLS_CERT,
+                local_private_key_file=LDAP_CLIENT_TLS_KEY,
                 validate=ssl.CERT_REQUIRED,
             ),
         )
