@@ -147,8 +147,10 @@ Update slapd args in `/etc/default/slapd`. add `ldaps:///` to `SLAPD_SERVICES`, 
 ### Create TLS key and certificate for CLIENT(s)
 
 ```bash
+# Create a directory on the SERVER which will hold minted client keys & certs
 sudo -i
 mkdir /root/client-certs && cd /root/client-certs
+chmod 700 /root/client-certs
 ```
 
 Create `CLIENT_MACHINE.info`
