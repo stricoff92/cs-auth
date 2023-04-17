@@ -1,10 +1,10 @@
 # cs-auth
 
-## slapd installation
-```bash
-sudo apt install slapd ldap-utils
-sudo dpkg-reconfigure slapd
-```
+## What is this Repo?
+ - A readme which details how to install and configure `openLDAP` and `sssd`
+ - A Python CLI program that:
+   - migrates data from the old auth server to the new auth server
+   - provides management scripts for doing CRUD operations on OpenLDAP
 
 <hr>
 
@@ -55,6 +55,12 @@ pip install -r requirements.txt
 ```
 
 <hr>
+
+## slapd installation
+```bash
+sudo apt install slapd ldap-utils
+sudo dpkg-reconfigure slapd
+```
 
 ## Setup TLS
 
