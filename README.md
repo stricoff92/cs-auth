@@ -3,7 +3,7 @@
 ## What is this Repo?
  - A readme which details how to install and configure `openLDAP` and `sssd`
  - A Python CLI program that:
-   - migrates data from the old auth server to the new auth server
+   - migrates data from a UNIX backend to a stock standard openLDAP backend
    - provides management scripts for doing CRUD operations on OpenLDAP
 
 <hr>
