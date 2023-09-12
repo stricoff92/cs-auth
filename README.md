@@ -1,4 +1,4 @@
-# cs-auth
+# Unix to OpenLDAP Migration Tool
 
 ## What is this Repo?
  - A readme which details how to install and configure `openLDAP` and `sssd`
